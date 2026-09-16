@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cantina Escolar - Sistema de Estoques e Pedidos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ===== TELA INICIAL ANIMADA (SPLASH SCREEN) ===== */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background:
+                linear-gradient(rgba(10, 30, 65, 0.72), rgba(10, 30, 65, 0.9)),
+                url('Tela de fundo escuro.png') center center / cover no-repeat,
+                #0a1e41;
+            opacity: 1;
+            transition: opacity 0.8s ease;
+        }
+
+        .splash-screen.splash-fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .splash-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* A logo (imagem com fundo transparente) surge e cresce com a mesma animação original */
+        .splash-logo-img {
+            width: 230px;
+            max-width: 70vw;
+            height: auto;
+            filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.45));
+            animation: splashLogoGrow 4s ease-out forwards;
+        }
+
+        @keyframes splashLogoGrow {
+            0%   { transform: scale(0.6); }
+            100% { transform: scale(1.15); }
+        }
+
+        /* Linha que se expande suavemente sob a logo */
+        .splash-underline {
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #dbe4f5, transparent);
+            margin-top: 18px;
+            animation: splashUnderline 2s ease-out 1s forwards;
+        }
+
+        @keyframes splashUnderline {
+            from { width: 0; opacity: 0; }
+            to   { width: 180px; opacity: 0.9; }
+        }
+
+        /* Esconde o conteúdo da tela de login enquanto a splash está ativa */
+        body.splash-active {
+            overflow: hidden;
+        }
+
+        body.splash-active .container {
+            opacity: 0;
+            animation: none;
+        }
+    </style>
+</head>
+<body class="cv-page-body splash-active">
+
+    <!-- TELA INICIAL (SPLASH): a logo aparece com fade-in e sai com fade-out -->
+    <div class="splash-screen" id="splash-screen">
+        <div class="splash-content">
+            <img class="splash-logo-img" src="logo-al.png" alt="Logotipo AL">
+            <span class="splash-underline"></span>
+        </div>
+    </div>
+
+    <div class="container cv-menu-card">
+
+        <!-- LOGOTIPO CORONEL VENÂNCIO -->
+        <div class="cv-logo">
+            <img class="cv-shield" src="logocv.png" alt="Logotipo Coronel Venâncio">
+            <span class="cv-logo-title">Coronel Venâncio</span>
+            <span class="cv-logo-underline"></span>
+        </div>
+
+        <!-- TÍTULO E SUBTÍTULO -->
+        <h2 class="cv-title">Cantina Escolar</h2>
+        <div class="cv-divider"><span></span><i></i><span></span></div>
+        <p class="subtitle">Sistema de Controle de Estoque e Pedidos</p>
+
+        <!-- SELEÇÃO DE PERFIL -->
+        <div class="menu-grid cv-menu-grid">
+            <button type="button" class="menu-btn cv-menu-btn cv-select-btn" data-tipo="admin" onclick="selecionarPerfil('admin', this)">
+                <span class="menu-icon cv-menu-icon">
+                    <svg viewBox="0 0 48 48" width="26" height="26" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="10" y="18" width="28" height="22" rx="4"/>
+                        <path d="M19 18 V14 C19 11.6 21.2 10 24 10 C26.8 10 29 11.6 29 14 V18"/>
+                        <path d="M24 26 L24 31"/>
+                    </svg>
+                </span>
+                <span class="menu-text">Administrador</span>
+                <span class="menu-arrow cv-menu-arrow">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1a4fbf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L16 12 L9 18"/></svg>
+                </span>
+            </button>
+
+            <button type="button" class="menu-btn cv-menu-btn cv-select-btn" data-tipo="usuario" onclick="selecionarPerfil('usuario', this)">
+                <span class="menu-icon cv-menu-icon">
+                    <svg viewBox="0 0 48 48" width="26" height="26" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="24" cy="16" r="8"/>
+                        <path d="M10 40 C10 30 16 25 24 25 C32 25 38 30 38 40"/>
+                    </svg>
+                </span>
+                <span class="menu-text">Usuário</span>
+                <span class="menu-arrow cv-menu-arrow">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1a4fbf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L16 12 L9 18"/></svg>
+                </span>
+            </button>
+        </div>
+<!-- FORMULÁRIO DE LOGIN -->
+        <div class="login-form" id="login-form">
+            <div class="form-panel">
+                <p class="form-title" id="form-title">Login</p>
+
+                <div class="form-group">
+                    <label>Login - CPF</label>
+                    <div class="input-group">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="cpf" placeholder="Digite seu CPF" maxlength="11" inputmode="numeric">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Senha</label>
+                    <div class="input-group">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="senha" placeholder="Digite sua senha">
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-primary" onclick="entrar()">Entrar →</button>
+
+                <div class="test-creds" id="test-creds">
+                    <strong id="test-creds-text">Credenciais de teste</strong>
+                </div>
+
+                <div style="text-align:center;margin-top:16px;">
+                    <button type="button" class="back-btn" onclick="voltarSelecao()">← Selecionar outro perfil</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RODAPÉ -->
+        <div class="cv-footer">
+            <div class="cv-footer-line"></div>
+            <span class="cv-footer-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1a4fbf" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 2 V9 M3 2 V7 C3 8.5 4 9 5 9 M7 2 V7 C7 8.5 6 9 5 9"/>
+                    <path d="M5 9 V22"/>
+                    <path d="M17 2 C14.2 2 14 6 14 8.5 C14 10 15 10.5 16.5 10.5 V22"/>
+                    <path d="M16.5 10.5 V2"/>
+                </svg>
+            </span>
+            <div class="cv-footer-line"></div>
+        </div>
+        <p class="cv-footer-text">Qualidade, organização e cuidado em cada refeição.</p>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let perfilSelecionado = null;
+
+        function selecionarPerfil(tipo, el) {
+            perfilSelecionado = tipo;
+
+            // Remove destaque de todos os cards
+            document.querySelectorAll('.cv-select-btn').forEach(c => c.classList.remove('selected'));
+
+            // Destaque o selecionado
+            el.classList.add('selected');
+
+            // Atualiza o título do formulário
+            const titulo = tipo === 'admin' ? 'Login Administrador' : 'Login Usuário';
+            document.getElementById('form-title').textContent = titulo;
+
+            // Atualiza as credenciais de teste
+            const creds = tipo === 'admin'
+                ? 'CPF: 12345678900 | Senha: admin123'
+                : 'CPF: 98765432100 | Senha: usuario123';
+            document.getElementById('test-creds-text').textContent = creds;
+
+            // Mostra o formulário
+            document.getElementById('login-form').classList.add('visible');
+
+            // Limpa campos ao trocar de perfil
+            document.getElementById('cpf').value = '';
+            document.getElementById('senha').value = '';
+
+            // Foca no campo CPF
+            setTimeout(() => document.getElementById('cpf').focus(), 350);
+        }
+
+        function voltarSelecao() {
+            perfilSelecionado = null;
+            document.querySelectorAll('.cv-select-btn').forEach(c => c.classList.remove('selected'));
+            document.getElementById('login-form').classList.remove('visible');
+            document.getElementById('cpf').value = '';
+            document.getElementById('senha').value = '';
+        }
+
+        function entrar() {
+            if (!perfilSelecionado) {
+                alert('Selecione um perfil (Administrador ou Usuário).');
+                return;
+            }
+
+            const cpf = document.getElementById('cpf').value.trim();
+            const senha = document.getElementById('senha').value.trim();
+
+            if (!cpf || !senha) {
+                alert('Preencha todos os campos!');
+                return;
+            }
+
+            if (fazerLogin(cpf, senha, perfilSelecionado)) {
+                const destino = perfilSelecionado === 'admin' ? 'admin/menu.html' : 'usuario/menu.html';
+                window.location.href = destino;
+            } else {
+                alert('CPF ou senha incorretos!');
+            }
+        }
+
+        // Enter navega entre os campos e dispara o login
+        document.addEventListener('DOMContentLoaded', function() {
+            const cpf = document.getElementById('cpf');
+            const senha = document.getElementById('senha');
+
+            cpf.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') senha.focus();
+            });
+
+            senha.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') entrar();
+            });
+        });
+
+        // ===== TELA INICIAL ANIMADA =====
+        // 1) A logo (imagem) surge e cresce aos poucos (animação CSS de 4s)
+        // 2) Após 4 segundos, aplica o fade out
+        // 3) Ao terminar o fade out, remove a splash e revela a tela de login
+        (function() {
+            const splash = document.getElementById('splash-screen');
+            if (!splash) return;
+
+            setTimeout(function() {
+                splash.classList.add('splash-fade-out');
+            }, 4000);
+
+            // Remove a splash do DOM assim que o fade out terminar
+            splash.addEventListener('transitionend', function(e) {
+                if (e.target !== splash) return;
+                document.body.classList.remove('splash-active');
+                splash.remove();
+            });
+
+            // Fallback caso o evento transitionend não dispare
+            setTimeout(function() {
+                if (document.body.contains(splash)) {
+                    document.body.classList.remove('splash-active');
+                    splash.remove();
+                }
+            }, 5200);
+        })();
+    </script>
+</body>
+</html>
