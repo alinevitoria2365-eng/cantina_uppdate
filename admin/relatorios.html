@@ -126,7 +126,7 @@
             background: linear-gradient(135deg, #f6ad55, #dd6b20);
             box-shadow: 0 4px 14px rgba(221, 107, 32, 0.25);
         }
-.btn-print {
+        .btn-print {
             display: inline-flex;
             align-items: center;
             gap: 6px;
@@ -181,7 +181,7 @@
 
         <h2 class="cv-page-title">Relatórios</h2>
         <div class="cv-divider"><span></span><i></i><span></span></div>
-        <p class="cv-page-subtitle">Visualize e analise dados do sistema</p>
+        <p class="cv-page-subtitle">Visualize e analise dados do sistema em tempo real</p>
 
         <!-- RESUMO GERAL (sempre visível) -->
         <div id="resumo-geral" style="margin-bottom:16px;"></div>
@@ -211,7 +211,8 @@
             </div>
             <div class="report-content" id="report-estoque-baixo"></div>
         </div>
-<!-- RELATÓRIO 3: Entradas -->
+
+        <!-- RELATÓRIO 3: Entradas -->
         <div class="report-card" onclick="toggleReport('entradas')">
             <div class="report-header">
                 <div class="report-icon" style="background:linear-gradient(135deg,#48bb78,#38a169);box-shadow:0 4px 14px rgba(56,161,105,0.25);">📥</div>
@@ -262,7 +263,8 @@
             </div>
             <div class="report-content" id="report-mais-movimentados"></div>
         </div>
-<div class="footer-bar cv-back-bar">
+
+        <div class="footer-bar cv-back-bar">
             <button type="button" class="btn btn-outline cv-back-btn" onclick="window.location.href='menu.html'">
                 <span class="cv-back-icon">
                     <svg viewBox="0 0 24 24" width="22" height="20" fill="none" stroke="#12305c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12 H4 M4 12 L10 6 M4 12 L10 18"/></svg>
@@ -315,7 +317,6 @@
             }
         }
 
-        // ===== RESUMO GERAL =====
         function carregarResumoGeral() {
             const products = getProducts();
             const mov = getMovimentacoes();
@@ -352,7 +353,7 @@
                 </div>
             `;
         }
-// ===== RELATÓRIO 1: ESTOQUE ATUAL =====
+
         function loadReportEstoqueAtual() {
             const products = getProducts();
             const container = document.getElementById("report-estoque-atual");
@@ -377,11 +378,12 @@
             products.forEach((p, i) => {
                 const val = p.quantidade * p.preco;
                 totalValue += val;
+                const badgeAlt = typeof formatarBadgeUltimaAlteracaoProduto === "function" ? formatarBadgeUltimaAlteracaoProduto(p) : "";
                 html += `
                     <tr>
                         <td>${i + 1}</td>
-                        <td><strong>${p.nome}</strong></td>
-                        <td>${p.quantidade}</td>
+                        <td><strong>${p.nome}</strong>${badgeAlt}</td>
+                        <td><strong>${p.quantidade}</strong></td>
                         <td>R$ ${p.preco.toFixed(2)}</td>
                         <td>R$ ${val.toFixed(2)}</td>
                     </tr>
@@ -391,12 +393,11 @@
                     </tbody>
                 </table>
                 <div class="total-box">Valor Total em Estoque: R$ ${totalValue.toFixed(2)}</div>
-                <button class="btn-print" onclick="window.print()">🖨️ Imprimir Relatório</button>
+                <button class="btn-print" onclick="event.stopPropagation(); window.print()">🖨️ Imprimir Relatório</button>
             `;
             container.innerHTML = html;
         }
 
-        // ===== RELATÓRIO 2: ESTOQUE BAIXO =====
         function loadReportEstoqueBaixo() {
             const products = getProducts();
             const container = document.getElementById("report-estoque-baixo");
@@ -443,7 +444,7 @@
 
             container.innerHTML = html;
         }
-// ===== RELATÓRIO 3: ENTRADAS =====
+
         function loadReportEntradas() {
             const mov = getMovimentacoes();
             const container = document.getElementById("report-entradas");
@@ -461,18 +462,21 @@
                             <th>Data / Hora</th>
                             <th>Produto</th>
                             <th>Quantidade</th>
-                            <th>Origem</th>
+                            <th>Responsável / Origem</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
             entradas.forEach(m => {
+                const antesDepois = (m.estoqueAnterior !== undefined && m.estoqueAtual !== undefined)
+                    ? `<div style="font-size:11px;color:#718096;">Estoque: ${m.estoqueAnterior} → ${m.estoqueAtual}</div>`
+                    : "";
                 html += `
                     <tr>
                         <td>${m.data}</td>
                         <td><strong>${m.produto}</strong></td>
-                        <td style="color:#38a169;font-weight:600;">+${m.quantidade}</td>
-                        <td>${m.motivo || m.responsavel || "Admin"}</td>
+                        <td style="color:#38a169;font-weight:700;">+${m.quantidade}${antesDepois}</td>
+                        <td>${m.responsavel || "Admin"} ${m.motivo ? `<div style="font-size:11px;color:#718096;">${m.motivo}</div>` : ""}</td>
                     </tr>
                 `;
             });
@@ -484,7 +488,6 @@
             container.innerHTML = html;
         }
 
-        // ===== RELATÓRIO 4: SAÍDAS =====
         function loadReportSaidas() {
             const mov = getMovimentacoes();
             const container = document.getElementById("report-saidas");
@@ -502,18 +505,21 @@
                             <th>Data / Hora</th>
                             <th>Produto</th>
                             <th>Quantidade</th>
-                            <th>Motivo</th>
+                            <th>Responsável / Motivo</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
             saidas.forEach(m => {
+                const antesDepois = (m.estoqueAnterior !== undefined && m.estoqueAtual !== undefined)
+                    ? `<div style="font-size:11px;color:#718096;">Estoque: ${m.estoqueAnterior} → ${m.estoqueAtual}</div>`
+                    : "";
                 html += `
                     <tr>
                         <td>${m.data}</td>
                         <td><strong>${m.produto}</strong></td>
-                        <td style="color:#c53030;font-weight:600;">-${m.quantidade}</td>
-                        <td>${m.motivo || "Admin"}</td>
+                        <td style="color:#c53030;font-weight:700;">-${m.quantidade}${antesDepois}</td>
+                        <td>${m.responsavel || "Admin"} ${m.motivo ? `<div style="font-size:11px;color:#718096;">${m.motivo}</div>` : ""}</td>
                     </tr>
                 `;
             });
@@ -525,7 +531,6 @@
             container.innerHTML = html;
         }
 
-        // ===== RELATÓRIO 5: PEDIDOS DOS USUÁRIOS =====
         function loadReportPedidos() {
             const pedidos = getHistoricoPedidos();
             const container = document.getElementById("report-pedidos");
@@ -552,7 +557,7 @@
                 html += `
                     <div style="background:#f7fafc;border-radius:8px;padding:12px;margin-bottom:8px;border:1px solid #e2e8f0;">
                         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-                            <strong style="color:#12305c;">Pedido #${pedido.id}</strong>
+                            <strong style="color:#12305c;">Pedido #${pedido.id} ${pedido.solicitante ? `(${pedido.solicitante})` : ""}</strong>
                             <span style="font-size:13px;color:#718096;">${pedido.data}</span>
                         </div>
                         <table class="report-table" style="font-size:13px;">
@@ -577,7 +582,7 @@
 
             container.innerHTML = html;
         }
-// ===== RELATÓRIO 6: PRODUTOS MAIS MOVIMENTADOS =====
+
         function loadReportMaisMovimentados() {
             const mov = getMovimentacoes();
             const container = document.getElementById("report-mais-movimentados");

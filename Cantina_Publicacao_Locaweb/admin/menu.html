@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Menu</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
@@ -31,6 +31,9 @@
     <h2 class="cv-title">O que quer fazer?</h2>
     <div class="cv-divider"><span></span><i></i><span></span></div>
     <p class="subtitle" id="admin-greeting">Selecione uma operação</p>
+
+    <!-- PAINEL DE ÚLTIMAS ALTERAÇÕES (MOSTRA AO ADMIN TUDO QUE FOI MUDADO) -->
+    <div id="painel-alteracoes-admin" style="display:none;"></div>
 
     <div class="menu-grid cv-menu-grid">
         <button type="button" class="menu-btn cv-menu-btn" onclick="window.location.href='dashboard.html'">
@@ -61,37 +64,6 @@
             </span>
         </button>
 
-
-        
-       <!-- <button type="button" class="menu-btn cv-menu-btn" onclick="window.location.href='saida.html'">
-            <span class="menu-icon cv-menu-icon">
-                <svg viewBox="0 0 48 48" width="26" height="26" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M24 28 V6 M24 6 L15 15 M24 6 L33 15"/>
-                    <path d="M8 26 V36 C8 39 10 41 13 41 H35 C38 41 40 39 40 36 V26"/>
-                </svg>
-            </span>
-            <span class="menu-text">Saída</span>
-            <span class="menu-arrow cv-menu-arrow">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1a4fbf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L16 12 L9 18"/></svg>
-            </span>
-        </button>-->
-            
-       <!-- <button type="button" class="menu-btn cv-menu-btn" onclick="window.location.href='estoque.html'">
-            <span class="menu-icon cv-menu-icon">
-                <svg viewBox="0 0 48 48" width="26" height="26" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="10" y="8" width="28" height="34" rx="3"/>
-                    <rect x="17" y="5" width="14" height="7" rx="2" fill="#ffffff" stroke="none"/>
-                    <line x1="16" y1="20" x2="32" y2="20"/>
-                    <line x1="16" y1="27" x2="32" y2="27"/>
-                    <line x1="16" y1="34" x2="26" y2="34"/>
-                </svg>
-            </span>
-            <span class="menu-text">Ver itens</span>
-            <span class="menu-arrow cv-menu-arrow">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1a4fbf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L16 12 L9 18"/></svg>
-            </span>
-        </button> -->
-
         <button type="button" class="menu-btn cv-menu-btn" onclick="window.location.href='pedidos.html'">
             <span class="menu-icon cv-menu-icon">
                 <svg viewBox="0 0 48 48" width="26" height="26" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
@@ -102,7 +74,7 @@
                     <line x1="16" y1="34" x2="26" y2="34"/>
                 </svg>
             </span>
-            <span class="menu-text">Gerenciar Pedidos</span>
+            <span class="menu-text">Gerenciar Pedidos <span id="badgePedidosAdmin" class="cv-cardapio-status-badge badge-alterado" style="display:none;"></span></span>
             <span class="menu-arrow cv-menu-arrow">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1a4fbf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L16 12 L9 18"/></svg>
             </span>
@@ -115,7 +87,7 @@
                     <path d="M24 14 V24 L31 29"/>
                 </svg>
             </span>
-            <span class="menu-text">Histórico de Atividades</span>
+            <span class="menu-text">Histórico de Atividades <span id="badgeLogsAdmin" class="cv-cardapio-status-badge badge-alterado" style="display:none;"></span></span>
             <span class="menu-arrow cv-menu-arrow">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1a4fbf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L16 12 L9 18"/></svg>
             </span>
@@ -182,7 +154,6 @@
     <script src="../js/app.js"></script>
     <script src="../js/cardapio.js"></script>
     <script>
-        // Proteger rota - verificar login
         document.addEventListener("DOMContentLoaded", function() {
             if (getLoggedInType() !== "admin") {
                 window.location.href = "login.html";
@@ -193,8 +164,8 @@
             if (greetingEl && nome && nome !== "Administrador") {
                 greetingEl.textContent = `Olá, ${nome}! Selecione uma operação`;
             }
+            renderizarResumoAlteracoesAdmin("painel-alteracoes-admin", 3);
         });
     </script>
 </body>
 </html>
-

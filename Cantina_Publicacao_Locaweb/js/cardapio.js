@@ -142,6 +142,9 @@ const DEFAULT_CARDAPIO = {
 // Obter cardápio persistido ou o padrão original
 function getCardapioData() {
     try {
+        if (typeof sincronizarStorageEntrePaginas === "function") {
+            sincronizarStorageEntrePaginas();
+        }
         const salvo = localStorage.getItem("cardapioData");
         if (salvo) {
             const parsed = JSON.parse(salvo);
@@ -162,19 +165,24 @@ function saveCardapioData(novoCardapio, motivoLog) {
     CARDAPIO = novoCardapio;
     localStorage.setItem("cardapioData", JSON.stringify(CARDAPIO));
     const responsavel = typeof getLoggedInName === "function" ? getLoggedInName() : "Usuário";
+    const perfil = typeof getLoggedInPerfilLabel === "function" ? getLoggedInPerfilLabel() : "Usuário";
     const agoraStr = new Date().toLocaleDateString("pt-BR") + " às " + new Date().toLocaleTimeString("pt-BR");
     if (motivoLog) {
         if (typeof registrarLog === "function") {
-            registrarLog("alteracao", `${responsavel} alterou o Cardápio da Semana: ${motivoLog}`);
+            registrarLog("alteracao", `${responsavel} (${perfil}) alterou o Cardápio da Semana: ${motivoLog}`);
         }
         if (typeof saveCardapioUltimaAlteracao === "function") {
             saveCardapioUltimaAlteracao({
                 usuario: responsavel,
+                perfil: perfil,
                 dataHora: agoraStr,
                 tipo: "cardapio",
                 resumo: motivoLog
             });
         }
+    }
+    if (typeof salvarEstadoWindowName === "function") {
+        salvarEstadoWindowName(true, false);
     }
     atualizarTelasCardapioAbertas();
     atualizarBadgesMenu();
@@ -186,11 +194,11 @@ var diaQuantidadesMeta = {};
 
 function carregarQuantidadesStorage() {
     try {
-        diaQuantidades = typeof getCardapioQuantidades === "function" 
-            ? getCardapioQuantidades() 
+        diaQuantidades = typeof getCardapioQuantidades === "function"
+            ? getCardapioQuantidades()
             : (JSON.parse(localStorage.getItem("cardapioDiaQuantidades")) || {});
-        diaQuantidadesMeta = typeof getCardapioQuantidadesMeta === "function" 
-            ? getCardapioQuantidadesMeta() 
+        diaQuantidadesMeta = typeof getCardapioQuantidadesMeta === "function"
+            ? getCardapioQuantidadesMeta()
             : (JSON.parse(localStorage.getItem("cardapioQuantidadesMeta")) || {});
     } catch (e) {
         diaQuantidades = {};
@@ -204,37 +212,50 @@ function salvarQuantidadesStorage() {
     } else {
         localStorage.setItem("cardapioDiaQuantidades", JSON.stringify(diaQuantidades));
         localStorage.setItem("cardapioQuantidadesMeta", JSON.stringify(diaQuantidadesMeta));
+        if (typeof salvarEstadoWindowName === "function") {
+            salvarEstadoWindowName(true, false);
+        }
     }
 }
 
 // Carregar quantidades imediatamente
 carregarQuantidadesStorage();
 
-/* ---------- Debounce para registrar logs de alteração sem poluir ---------- */
-let logTimerQtd = null;
+/* ---------- Registro imediato em lote por sessão para nunca perder ao fechar ---------- */
+let cardapioLogIdsSessao = {};
 function registrarLogDebounced(chave, diaNome, ingNome, valor, unidade, padrao) {
-    if (logTimerQtd) clearTimeout(logTimerQtd);
-    logTimerQtd = setTimeout(() => {
-        const responsavel = typeof getLoggedInName === "function" ? getLoggedInName() : "Usuário";
-        const agoraStr = new Date().toLocaleDateString("pt-BR") + " às " + new Date().toLocaleTimeString("pt-BR");
-        const diffMsg = valor !== padrao ? ` (Padrão: ${padrao})` : " (Restaurado ao padrão)";
-        const resumo = `Ajustou "${ingNome}" para ${valor} ${unidade} em ${diaNome}${diffMsg}`;
-        if (typeof registrarLog === "function") {
-            registrarLog("alteracao", `${responsavel} alterou a quantidade de "${ingNome}" para ${valor} ${unidade} no Cardápio de ${diaNome}${diffMsg}`);
-        }
-        if (typeof saveCardapioUltimaAlteracao === "function") {
-            saveCardapioUltimaAlteracao({
-                usuario: responsavel,
-                dataHora: agoraStr,
-                tipo: "quantidade",
-                dia: diaNome,
-                item: ingNome,
-                valor: valor,
-                resumo: resumo
-            });
-        }
-        atualizarBadgesMenu();
-    }, 600);
+    const responsavel = typeof getLoggedInName === "function" ? getLoggedInName() : "Usuário";
+    const perfil = typeof getLoggedInPerfilLabel === "function" ? getLoggedInPerfilLabel() : "Usuário";
+    const agoraStr = new Date().toLocaleDateString("pt-BR") + " às " + new Date().toLocaleTimeString("pt-BR");
+    const delta = valor - padrao;
+    const diffStr = delta > 0 ? `+${delta}` : `${delta}`;
+    const diffMsg = valor !== padrao ? ` (Padrão: ${padrao} → Novo: ${valor} [${diffStr} ${unidade}])` : ` (Restaurado ao padrão: ${padrao} ${unidade})`;
+    const resumo = `Ajustou "${ingNome}" em ${diaNome}: ${padrao} → ${valor} ${unidade}`;
+
+    if (!cardapioLogIdsSessao[chave]) {
+        cardapioLogIdsSessao[chave] = "log-cardapio-" + Date.now() + "-" + chave.replace(/\s+/g, "_");
+    }
+
+    if (typeof registrarLog === "function") {
+        registrarLog(
+            "alteracao",
+            `${responsavel} (${perfil}) alterou a quantidade de "${ingNome}" no Cardápio de ${diaNome}${diffMsg}`,
+            cardapioLogIdsSessao[chave]
+        );
+    }
+    if (typeof saveCardapioUltimaAlteracao === "function") {
+        saveCardapioUltimaAlteracao({
+            usuario: responsavel,
+            perfil: perfil,
+            dataHora: agoraStr,
+            tipo: "quantidade",
+            dia: diaNome,
+            item: ingNome,
+            valor: valor,
+            resumo: resumo
+        });
+    }
+    atualizarBadgesMenu();
 }
 
 /* ---------- Localizar produto no estoque pelo nome ---------- */
@@ -288,6 +309,7 @@ function redefinirItemDiaPadrao(diaNome, ingNome) {
     const chave = `${dia.nome}-${ing.nome}`;
     delete diaQuantidades[chave];
     delete diaQuantidadesMeta[chave];
+    delete cardapioLogIdsSessao[chave];
     salvarQuantidadesStorage();
 
     const padrao = ing.quantidadePadrao;
@@ -299,13 +321,15 @@ function redefinirItemDiaPadrao(diaNome, ingNome) {
     atualizarBadgeItemAjustado(dia.nome, ing.nome, padrao, ing.quantidadePadrao, ing.unidade, "");
 
     const responsavel = typeof getLoggedInName === "function" ? getLoggedInName() : "Usuário";
+    const perfil = typeof getLoggedInPerfilLabel === "function" ? getLoggedInPerfilLabel() : "Usuário";
     const agoraStr = new Date().toLocaleDateString("pt-BR") + " às " + new Date().toLocaleTimeString("pt-BR");
     if (typeof registrarLog === "function") {
-        registrarLog("alteracao", `${responsavel} restaurou a quantidade padrão de "${ing.nome}" (${padrao} ${ing.unidade}) no Cardápio de ${dia.nome}`);
+        registrarLog("alteracao", `${responsavel} (${perfil}) restaurou a quantidade padrão de "${ing.nome}" (${padrao} ${ing.unidade}) no Cardápio de ${dia.nome}`);
     }
     if (typeof saveCardapioUltimaAlteracao === "function") {
         saveCardapioUltimaAlteracao({
             usuario: responsavel,
+            perfil: perfil,
             dataHora: agoraStr,
             tipo: "restauracao-item",
             dia: dia.nome,
@@ -321,16 +345,19 @@ function restaurarTodosPadroes() {
     if (!confirm("Deseja restaurar TODAS as quantidades do Cardápio para os valores padrões oficiais?")) return;
     diaQuantidades = {};
     diaQuantidadesMeta = {};
+    cardapioLogIdsSessao = {};
     salvarQuantidadesStorage();
 
     const responsavel = typeof getLoggedInName === "function" ? getLoggedInName() : "Administrador";
+    const perfil = typeof getLoggedInPerfilLabel === "function" ? getLoggedInPerfilLabel() : "Administrador";
     const agoraStr = new Date().toLocaleDateString("pt-BR") + " às " + new Date().toLocaleTimeString("pt-BR");
     if (typeof registrarLog === "function") {
-        registrarLog("alteracao", `${responsavel} restaurou todas as quantidades do Cardápio da Semana para o padrão`);
+        registrarLog("alteracao", `${responsavel} (${perfil}) restaurou todas as quantidades do Cardápio da Semana para o padrão`);
     }
     if (typeof saveCardapioUltimaAlteracao === "function") {
         saveCardapioUltimaAlteracao({
             usuario: responsavel,
+            perfil: perfil,
             dataHora: agoraStr,
             tipo: "restauracao-geral",
             resumo: "Todas as quantidades foram restauradas para o padrão oficial"
@@ -353,20 +380,26 @@ function restaurarTodoCardapioOficial() {
     localStorage.removeItem("cardapioData");
     diaQuantidades = {};
     diaQuantidadesMeta = {};
+    cardapioLogIdsSessao = {};
     salvarQuantidadesStorage();
 
     const responsavel = typeof getLoggedInName === "function" ? getLoggedInName() : "Administrador";
+    const perfil = typeof getLoggedInPerfilLabel === "function" ? getLoggedInPerfilLabel() : "Administrador";
     const agoraStr = new Date().toLocaleDateString("pt-BR") + " às " + new Date().toLocaleTimeString("pt-BR");
     if (typeof registrarLog === "function") {
-        registrarLog("alteracao", `${responsavel} restaurou todo o Cardápio (pratos e ingredientes) para o padrão oficial SEDUC-SP`);
+        registrarLog("alteracao", `${responsavel} (${perfil}) restaurou todo o Cardápio (pratos e ingredientes) para o padrão oficial SEDUC-SP`);
     }
     if (typeof saveCardapioUltimaAlteracao === "function") {
         saveCardapioUltimaAlteracao({
             usuario: responsavel,
+            perfil: perfil,
             dataHora: agoraStr,
             tipo: "restauracao-completa",
             resumo: "Cardápio completo restaurado para o padrão oficial SEDUC-SP"
         });
+    }
+    if (typeof salvarEstadoWindowName === "function") {
+        salvarEstadoWindowName(true, false);
     }
 
     fecharItensDia();
@@ -391,9 +424,11 @@ function ajustarQtdItemDia(diaNome, ingNome, delta) {
     diaQuantidades[chave] = novo;
 
     const responsavel = typeof getLoggedInName === "function" ? getLoggedInName() : "Usuário";
+    const perfil = typeof getLoggedInPerfilLabel === "function" ? getLoggedInPerfilLabel() : "Usuário";
     const agoraStr = new Date().toLocaleDateString("pt-BR") + " às " + new Date().toLocaleTimeString("pt-BR");
     diaQuantidadesMeta[chave] = {
         usuario: responsavel,
+        perfil: perfil,
         dataHora: agoraStr,
         valor: novo,
         padrao: ing.quantidadePadrao
@@ -425,9 +460,11 @@ function definirQtdItemDia(diaNome, ingNome, valor) {
     diaQuantidades[chave] = num;
 
     const responsavel = typeof getLoggedInName === "function" ? getLoggedInName() : "Usuário";
+    const perfil = typeof getLoggedInPerfilLabel === "function" ? getLoggedInPerfilLabel() : "Usuário";
     const agoraStr = new Date().toLocaleDateString("pt-BR") + " às " + new Date().toLocaleTimeString("pt-BR");
     diaQuantidadesMeta[chave] = {
         usuario: responsavel,
+        perfil: perfil,
         dataHora: agoraStr,
         valor: num,
         padrao: ing.quantidadePadrao
@@ -635,6 +672,9 @@ function salvarEdicaoPratosDia(diaNome, silencioso = false) {
 
 /* ---------- Atualizar telas abertas em tempo real ---------- */
 function atualizarTelasCardapioAbertas() {
+    carregarQuantidadesStorage();
+    CARDAPIO = getCardapioData();
+
     const corpo = document.querySelector(".cardapio-corpo");
     const cardapioOverlay = document.getElementById("cardapioOverlay");
     if (corpo && cardapioOverlay && cardapioOverlay.classList.contains("aberto")) {
@@ -657,7 +697,7 @@ function atualizarBadgesMenu() {
     const badgeUsuario = document.getElementById("badgeCardapioUsuario");
     const ultimaAlt = typeof getCardapioUltimaAlteracao === "function" ? getCardapioUltimaAlteracao() : null;
     const baixas = typeof getBaixasCardapio === "function" ? getBaixasCardapio() : [];
-    const baixasUsuario = baixas.filter(b => b.usuario === "Usuário");
+    const baixasUsuario = baixas.filter(b => typeof isPerfilUsuario === "function" ? isPerfilUsuario(b.perfil || b.usuario) : b.usuario !== "Administrador");
 
     // Verificar se há itens com quantidades alteradas em relação ao padrão
     let totalItensAjustados = 0;
@@ -671,18 +711,23 @@ function atualizarBadgesMenu() {
     });
 
     if (badgeAdmin) {
-        if (ultimaAlt && ultimaAlt.usuario === "Usuário") {
+        if (totalItensAjustados > 0) {
             badgeAdmin.style.display = "inline-flex";
             badgeAdmin.className = "cv-cardapio-status-badge badge-alterado";
-            badgeAdmin.innerHTML = `✏️ Alterado pelo Usuário (${totalItensAjustados > 0 ? totalItensAjustados + ' ajuste(s)' : 'personalizado'})`;
-        } else if (totalItensAjustados > 0) {
+            const autor = ultimaAlt ? ` por ${ultimaAlt.usuario}` : "";
+            badgeAdmin.innerHTML = `✏️ ${totalItensAjustados} ajuste(s)${autor}`;
+        } else if (ultimaAlt && ultimaAlt.tipo === "cardapio") {
             badgeAdmin.style.display = "inline-flex";
             badgeAdmin.className = "cv-cardapio-status-badge badge-alterado";
-            badgeAdmin.innerHTML = `✏️ ${totalItensAjustados} ajuste(s) do Usuário`;
+            badgeAdmin.innerHTML = `✏️ Cardápio editado (${ultimaAlt.usuario})`;
         } else if (baixasUsuario.length > 0) {
             badgeAdmin.style.display = "inline-flex";
             badgeAdmin.className = "cv-cardapio-status-badge badge-baixa";
-            badgeAdmin.innerHTML = `✅ ${baixasUsuario.length} Baixa(s) do Usuário`;
+            badgeAdmin.innerHTML = `✅ ${baixasUsuario.length} Baixa(s) (${baixasUsuario[baixasUsuario.length - 1].usuario})`;
+        } else if (baixas.length > 0) {
+            badgeAdmin.style.display = "inline-flex";
+            badgeAdmin.className = "cv-cardapio-status-badge badge-baixa";
+            badgeAdmin.innerHTML = `✅ ${baixas.length} Baixa(s) realizada(s)`;
         } else {
             badgeAdmin.style.display = "none";
         }
@@ -703,7 +748,6 @@ function montarTabelaCardapio() {
 
     // Calcular estatísticas de sincronização e alterações
     const ultimaAlt = typeof getCardapioUltimaAlteracao === "function" ? getCardapioUltimaAlteracao() : null;
-    const tipoLogin = typeof getLoggedInType === "function" ? getLoggedInType() : "";
     let totalItensAjustados = 0;
     c.dias.forEach(d => {
         d.ingredientes.forEach(ing => {
@@ -717,8 +761,11 @@ function montarTabelaCardapio() {
     // Banner informativo de sincronização
     let bannerSyncHtml = "";
     if (ultimaAlt) {
-        const badgeClasse = ultimaAlt.usuario === "Usuário" ? "sync-usuario" : "sync-admin";
-        const iconPerfil = ultimaAlt.usuario === "Usuário" ? "👤" : "🛡️";
+        const isUser = typeof isPerfilUsuario === "function"
+            ? isPerfilUsuario(ultimaAlt.perfil || ultimaAlt.usuario)
+            : (ultimaAlt.usuario === "Usuário");
+        const badgeClasse = isUser ? "sync-usuario" : "sync-admin";
+        const iconPerfil = isUser ? "👩‍🍳" : "🛡️";
         bannerSyncHtml = `
             <div class="cardapio-banner-sync ${badgeClasse}">
                 <div class="sync-info-lado">
@@ -882,6 +929,9 @@ function montarTabelaCardapio() {
 
 /* ---------- Abre a lista de itens do dia com botões de baixa e impressão ---------- */
 function abrirItensDia(diaNome) {
+    carregarQuantidadesStorage();
+    CARDAPIO = getCardapioData();
+
     const dia = CARDAPIO.dias.find(d => d.nome.toLowerCase() === diaNome.toLowerCase());
     if (!dia) return;
 
@@ -930,6 +980,10 @@ function abrirItensDia(diaNome) {
             </span>
         ` : '';
 
+        const badgeEstoqueAlterado = (prod && typeof formatarBadgeUltimaAlteracaoProduto === "function")
+            ? formatarBadgeUltimaAlteracaoProduto(prod)
+            : '';
+
         return `
             <div class="item-card-linha ${insuficiente && qtdParaUsar > 0 ? 'estoque-insuficiente' : ''}" id="card-item-${idSafe}">
                 <div class="item-card-info">
@@ -937,6 +991,7 @@ function abrirItensDia(diaNome) {
                     <span class="item-card-estoque-badge ${estoque > 0 ? 'em-estoque' : 'sem-estoque'}">
                         📦 Estoque atual: <strong>${estoque}</strong>
                     </span>
+                    ${badgeEstoqueAlterado}
                     <div id="badge-ajuste-${idSafe}">${badgeAjustadoHtml}</div>
                 </div>
                 <div class="item-card-controle">
@@ -1074,7 +1129,6 @@ function executarBaixaDia(diaNome) {
         return;
     }
 
-    const products = getProducts();
     const itensParaBaixar = [];
     let erroEstoque = false;
     let totalQtd = 0;
@@ -1085,7 +1139,6 @@ function executarBaixaDia(diaNome) {
             totalQtd += qtd;
             const prod = encontrarProdutoEstoque(ing.nome);
             if (!prod) {
-                // Produto não existe formalmente no estoque: cria ou avisa
                 itensParaBaixar.push({
                     ingrediente: ing,
                     produto: { id: null, nome: ing.nome, quantidade: 0 },
@@ -1116,24 +1169,30 @@ function executarBaixaDia(diaNome) {
     }
 
     const msgConfirm = `Confirma a BAIXA dos itens do Cardápio de ${dia.nome}-feira (${dia.data})?\n\n` +
-        itensParaBaixar.map(i => `• ${i.ingrediente.nome}: ${i.quantidadeBaixa} ${i.ingrediente.unidade}`).join("\n") +
+        itensParaBaixar.map(i => `• ${i.ingrediente.nome}: -${i.quantidadeBaixa} ${i.ingrediente.unidade} (Estoque: ${i.estoqueAnterior} → ${i.estoqueAtual})`).join("\n") +
         `\n\nTotal: ${totalQtd} unidades/volumes serão deduzidos do estoque.`;
 
     if (!confirm(msgConfirm)) return;
 
-    // Deduzir os produtos do estoque e registrar movimentações e logs
     const agoraStr = new Date().toLocaleDateString("pt-BR") + " às " + new Date().toLocaleTimeString("pt-BR");
     const responsavel = typeof getLoggedInName === "function" ? getLoggedInName() : "Usuário";
+    const perfil = typeof getLoggedInPerfilLabel === "function" ? getLoggedInPerfilLabel() : "Usuário";
     const itensRegistro = [];
 
     itensParaBaixar.forEach(item => {
         if (item.produto && item.produto.id !== null) {
             updateProductQuantity(item.produto.id, -item.quantidadeBaixa);
             if (typeof registrarMovimentacao === "function") {
-                registrarMovimentacao("saida", item.produto.nome, item.quantidadeBaixa, `Baixa Cardápio - ${dia.nome} (${dia.data})`);
+                registrarMovimentacao("saida", item.produto.nome, item.quantidadeBaixa, `Baixa Cardápio - ${dia.nome} (${dia.data})`, {
+                    estoqueAnterior: item.estoqueAnterior,
+                    estoqueAtual: item.estoqueAtual
+                });
             }
             if (typeof registrarLog === "function") {
-                registrarLog("saida", `Baixa de ${item.quantidadeBaixa} ${item.ingrediente.unidade} do produto "${item.produto.nome}" para o Cardápio de ${dia.nome} (${dia.data})`);
+                registrarLog(
+                    "saida",
+                    `${responsavel} (${perfil}) deu baixa de -${item.quantidadeBaixa} ${item.ingrediente.unidade} de "${item.produto.nome}" no Cardápio de ${dia.nome} (Estoque: ${item.estoqueAnterior} → ${item.estoqueAtual})`
+                );
             }
         }
         itensRegistro.push({
@@ -1145,10 +1204,10 @@ function executarBaixaDia(diaNome) {
         });
     });
 
-    // Salvar registro oficial da baixa
     const baixas = typeof getBaixasCardapio === "function" ? getBaixasCardapio() : [];
     const novaBaixa = {
         id: Date.now(),
+        timestamp: Date.now(),
         diaNome: dia.nome,
         diaData: dia.data,
         semana: CARDAPIO.semana,
@@ -1156,6 +1215,7 @@ function executarBaixaDia(diaNome) {
         dataHora: agoraStr,
         dataIso: new Date().toISOString(),
         usuario: responsavel,
+        perfil: perfil,
         pratos: dia.itens,
         itens: itensRegistro,
         totalVolumes: totalQtd
@@ -1169,6 +1229,7 @@ function executarBaixaDia(diaNome) {
     if (typeof saveCardapioUltimaAlteracao === "function") {
         saveCardapioUltimaAlteracao({
             usuario: responsavel,
+            perfil: perfil,
             dataHora: agoraStr,
             tipo: "baixa",
             dia: dia.nome,
@@ -1183,10 +1244,8 @@ function executarBaixaDia(diaNome) {
         alert(`✅ Baixa do dia ${dia.nome} realizada com sucesso!`);
     }
 
-    // Recarregar a tela de itens do dia com os dados atualizados
     abrirItensDia(dia.nome);
 
-    // Perguntar se deseja imprimir imediatamente
     setTimeout(() => {
         if (confirm("🎉 Baixa efetuada no estoque com sucesso!\n\nDeseja imprimir o comprovante da baixa agora?")) {
             imprimirBaixaDia(dia.nome);
@@ -1209,7 +1268,6 @@ function imprimirBaixaDia(diaNome) {
     if (ultimaBaixa) {
         dadosBaixa = ultimaBaixa;
     } else {
-        // Prévia / requisição baseada nas quantidades atualmente definidas
         const itensPrevia = dia.ingredientes.map(ing => {
             const prod = encontrarProdutoEstoque(ing.nome);
             const qtd = getQtdParaUsar(dia.nome, ing.nome, ing.quantidadePadrao);
@@ -1242,8 +1300,6 @@ function imprimirBaixaDia(diaNome) {
     if (!containerPrint) return;
 
     containerPrint.innerHTML = montarHTMLComprovante(dadosBaixa);
-
-    // Dispara a impressão nativa do navegador
     window.print();
 }
 
@@ -1379,7 +1435,6 @@ function criarModalCardapio() {
         </div>`;
     document.body.appendChild(overlay);
 
-    // Fechar: botão X, clique fora da caixa
     document.getElementById("cardapioFechar").addEventListener("click", fecharCardapio);
     overlay.addEventListener("click", function (e) {
         if (e.target === overlay) fecharCardapio();
@@ -1388,6 +1443,8 @@ function criarModalCardapio() {
 
 /* ---------- Abrir / fechar ---------- */
 function abrirCardapio() {
+    carregarQuantidadesStorage();
+    CARDAPIO = getCardapioData();
     criarModalCardapio();
     const corpo = document.querySelector(".cardapio-corpo");
     if (corpo) corpo.innerHTML = montarTabelaCardapio();
@@ -1424,6 +1481,10 @@ document.addEventListener("DOMContentLoaded", function () {
 // Sincronização entre abas/janelas em tempo real
 window.addEventListener("storage", function (e) {
     if (
+        !e.key ||
+        e.key === "products" ||
+        e.key === "logs" ||
+        e.key === "movimentacoes" ||
         e.key === "cardapioDiaQuantidades" ||
         e.key === "cardapioQuantidadesMeta" ||
         e.key === "cardapioData" ||
@@ -1436,4 +1497,3 @@ window.addEventListener("storage", function (e) {
         atualizarBadgesMenu();
     }
 });
-

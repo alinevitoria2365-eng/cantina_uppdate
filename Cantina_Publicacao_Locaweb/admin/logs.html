@@ -34,13 +34,11 @@
             word-break: break-word;
             overflow-wrap: anywhere;
         }
-        /* Larguras das colunas para caberem dentro do card */
-        .report-table th:nth-child(1) { width: 17%; }
-        .report-table th:nth-child(2) { width: 15%; }
-        .report-table th:nth-child(3) { width: 16%; }
+        .report-table th:nth-child(1) { width: 16%; }
+        .report-table th:nth-child(2) { width: 13%; }
+        .report-table th:nth-child(3) { width: 19%; }
         .report-table th:nth-child(4) { width: 15%; }
         .report-table th:nth-child(5) { width: 37%; }
-        /* Wrapper com rolagem horizontal caso a tela seja muito estreita */
         .table-wrap {
             overflow-x: auto;
         }
@@ -74,16 +72,6 @@
         .stat-box.green {
             background: linear-gradient(135deg, #48bb78, #38a169);
             box-shadow: 0 4px 14px rgba(56, 161, 105, 0.25);
-        }
-        .section-title {
-            font-family: 'Playfair Display', Georgia, serif;
-            font-weight: 700;
-            color: #12305c;
-            font-size: 17px;
-            margin: 20px 0 10px 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
         .acao-badge {
             display: inline-block;
@@ -212,7 +200,7 @@
 
         <h2 class="cv-page-title">Histórico de Atividades</h2>
         <div class="cv-divider"><span></span><i></i><span></span></div>
-        <p class="cv-page-subtitle">Acessos e alterações realizadas no sistema</p>
+        <p class="cv-page-subtitle">Todas as alterações e acessos realizados por Usuário e Administrador</p>
 
         <!-- RESUMO -->
         <div id="resumo-logs" style="margin-bottom:8px;"></div>
@@ -220,8 +208,8 @@
         <!-- FILTROS -->
         <div class="filtro-bar" id="filtro-bar">
             <button class="filtro-btn active" data-filtro="todos" onclick="aplicarFiltro('todos')">Todos</button>
+            <button class="filtro-btn" data-filtro="alteracoes" onclick="aplicarFiltro('alteracoes')">✏️ Alterações e Estoque</button>
             <button class="filtro-btn" data-filtro="login" onclick="aplicarFiltro('login')">🚪 Acessos</button>
-            <button class="filtro-btn" data-filtro="alteracoes" onclick="aplicarFiltro('alteracoes')">✏️ Alterações</button>
         </div>
 
         <!-- LISTA DE LOGS -->
@@ -294,16 +282,15 @@
 
         function renderizarLogs() {
             const logs = getLogs();
-            const filtrados = filtrarLogs().slice().reverse(); // mais recentes primeiro
+            const filtrados = filtrarLogs().slice().reverse();
             const container = document.getElementById("logs-lista");
             const resumo = document.getElementById("resumo-logs");
 
-            // Resumo
             const listaAdmins = typeof getListaAdmins === "function" ? getListaAdmins() : ["Rita", "Maria", "Roberta"];
             const totalAcessos = logs.filter(l => l.acao === "login").length;
             const totalAlteracoes = logs.filter(l => l.acao !== "login").length;
-            const acessosAdmin = logs.filter(l => l.acao === "login" && (l.usuario === "Administrador" || listaAdmins.includes(l.usuario))).length;
-            const acessosUsuario = logs.filter(l => l.acao === "login" && l.usuario !== "Administrador" && !listaAdmins.includes(l.usuario)).length;
+            const acessosAdmin = logs.filter(l => l.acao === "login" && (l.perfil === "Administrador" || l.usuario === "Administrador" || listaAdmins.includes(l.usuario))).length;
+            const acessosUsuario = logs.filter(l => l.acao === "login" && l.perfil !== "Administrador" && l.usuario !== "Administrador" && !listaAdmins.includes(l.usuario)).length;
 
             resumo.innerHTML = `
                 <div class="stats-grid">
@@ -339,9 +326,9 @@
                         <tr>
                             <th>Data</th>
                             <th>Hora</th>
-                            <th>Usuário</th>
+                            <th>Responsável</th>
                             <th>Atividade</th>
-                            <th>Detalhes</th>
+                            <th>O Que Foi Alterado</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -349,13 +336,19 @@
 
             filtrados.forEach(log => {
                 const destaque = log.acao === "login" ? 'style="background:#f7faff;"' : "";
+                const isUser = typeof isPerfilUsuario === "function" ? isPerfilUsuario(log.perfil || log.usuario) : false;
+                const iconePerfil = isUser ? "👩‍🍳" : "🛡️";
+                const subPerfil = isUser ? "Usuário (Cozinha)" : "Administrador";
                 html += `
                     <tr ${destaque}>
                         <td>${log.data}</td>
                         <td>${log.hora}</td>
-                        <td><strong>${log.usuario}</strong></td>
+                        <td>
+                            <strong>${iconePerfil} ${log.usuario}</strong>
+                            <div style="font-size:11px;color:#718096;">${subPerfil}</div>
+                        </td>
                         <td>${getAcaoBadge(log.acao)}</td>
-                        <td>${log.detalhes}</td>
+                        <td><strong>${log.detalhes}</strong></td>
                     </tr>
                 `;
             });

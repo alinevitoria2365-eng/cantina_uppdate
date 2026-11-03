@@ -1,4 +1,4 @@
-const CACHE_NAME = "cantina-v4";
+const CACHE_NAME = "cantina-v5";
 
 self.addEventListener("install", () => {
   self.skipWaiting();

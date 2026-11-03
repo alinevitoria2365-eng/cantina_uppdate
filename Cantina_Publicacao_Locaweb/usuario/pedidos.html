@@ -20,12 +20,12 @@
 
         <h2 class="cv-page-title">Fazer Pedido</h2>
         <div class="cv-divider"><span></span><i></i><span></span></div>
-        <p class="cv-page-subtitle">Clique em (+) para adicionar itens ao carrinho</p>
+        <p class="cv-page-subtitle">Clique em (+) para selecionar itens e adicionar ao carrinho</p>
 
         <div class="scrollable-list" id="product-list"></div>
 
         <div class="footer-bar" style="flex-direction:column;gap:12px;">
-            <a href="carrinho.html" class="btn btn-primary">🛒 Ver Carrinho</a>
+            <button type="button" class="btn btn-primary" onclick="adicionarPendentesAoCarrinhoEIr()">🛒 Ver Carrinho</button>
             <button type="button" class="btn btn-outline cv-back-btn" onclick="window.location.href='estoque.html'">
                 <span class="cv-back-icon">
                     <svg viewBox="0 0 24 24" width="22" height="20" fill="none" stroke="#12305c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12 H4 M4 12 L10 6 M4 12 L10 18"/></svg>
@@ -52,6 +52,11 @@
 
     <script src="../js/app.js"></script>
     <script>
+        function renderizarEstoquePagina() {
+            if (!hasPendingChanges("pedido")) {
+                renderProductList("product-list", "pedido");
+            }
+        }
         document.addEventListener("DOMContentLoaded", function() {
             if (getLoggedInType() !== "usuario") {
                 window.location.href = "login.html";
