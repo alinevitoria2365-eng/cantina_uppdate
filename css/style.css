@@ -8,7 +8,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: url('../Tela de fundo escuro.png') no-repeat center center fixed;
+    background: url('../tela-de-fundo-escuro.png') no-repeat center center fixed;
     background-color: #0a1e41;
     background-size: cover;
     min-height: 100vh;
@@ -263,6 +263,29 @@ body {
     .cv-menu-btn .menu-text {
         font-size: 18px;
     }
+
+    .cv-user-card {
+        padding: 10px 12px;
+        gap: 11px;
+    }
+
+    .cv-user-avatar {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+    }
+
+    .cv-user-initial {
+        font-size: 19px;
+    }
+
+    .cv-user-name {
+        font-size: 16px;
+    }
+
+    .cv-user-sub {
+        font-size: 11.5px;
+    }
 }
 
 /* ===== PÁGINAS OPERACIONAIS CV (subtelas) ===== */
@@ -468,6 +491,228 @@ input:focus {
     border-color: #1a4fbf;
     background: #fff;
     box-shadow: 0 0 0 3px rgba(26, 79, 191, 0.15);
+}
+
+select.cv-select-usuario {
+    width: 100%;
+    padding: 14px 42px 14px 44px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #12305c;
+    background: #f7fafc url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a4fbf' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") no-repeat right 16px center / 18px;
+    transition: all 0.3s;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+select.cv-select-usuario:focus {
+    border-color: #1a4fbf;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(26, 79, 191, 0.15);
+}
+
+select.cv-select-usuario option {
+    font-size: 15px;
+    font-weight: 500;
+    color: #12305c;
+    background: #ffffff;
+    padding: 10px 14px;
+}
+
+/* ===== SELEÇÃO DE COLABORADORAS (ESTILO CARDS CORONEL VENÂNCIO) ===== */
+.cv-user-section-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #12305c;
+    margin-bottom: 8px;
+    text-align: left;
+    letter-spacing: 0.2px;
+}
+
+.cv-user-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 6px 0 16px;
+    width: 100%;
+}
+
+.cv-user-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 12px 16px;
+    background: #ffffff;
+    border: 1.5px solid #e4e8ef;
+    border-radius: 18px;
+    box-shadow: 0 2px 8px rgba(18, 48, 92, 0.04);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-align: left;
+    font-family: inherit;
+    position: relative;
+    user-select: none;
+    outline: none;
+}
+
+.cv-user-card:hover {
+    background: #fdfefe;
+    border-color: #1a4fbf;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(18, 48, 92, 0.12);
+}
+
+.cv-user-card:focus-visible {
+    border-color: #1a4fbf;
+    box-shadow: 0 0 0 3px rgba(26, 79, 191, 0.22);
+}
+
+.cv-user-card.selected {
+    background: #f0f5ff;
+    border-color: #1a4fbf;
+    box-shadow: 0 0 0 3px rgba(26, 79, 191, 0.18), 0 8px 20px rgba(18, 48, 92, 0.08);
+    transform: translateY(-1px);
+}
+
+/* Avatar com monograma em Playfair Display e selo de cozinheira */
+.cv-user-avatar {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 50%;
+    background: #eef4fc;
+    border: 1.5px solid #dce8fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.25s ease;
+}
+
+.cv-user-card:hover .cv-user-avatar {
+    border-color: #1a4fbf;
+    background: #e6f0fd;
+}
+
+.cv-user-card.selected .cv-user-avatar {
+    background: #dbe7fb;
+    border-color: #1a4fbf;
+}
+
+.cv-user-initial {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 21px;
+    font-weight: 700;
+    color: #12305c;
+    line-height: 1;
+}
+
+.cv-user-badge {
+    position: absolute;
+    bottom: -3px;
+    right: -3px;
+    font-size: 13px;
+    line-height: 1;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.18));
+}
+
+/* Informações do colaborador */
+.cv-user-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.cv-user-name {
+    font-family: inherit;
+    font-size: 17.5px;
+    font-weight: 700;
+    color: #12305c;
+    letter-spacing: 0.2px;
+    line-height: 1.25;
+    transition: color 0.2s ease;
+}
+
+.cv-user-card.selected .cv-user-name {
+    color: #0d47a1;
+}
+
+.cv-user-sub {
+    font-size: 12.5px;
+    color: #718096;
+    margin-top: 2px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s ease;
+}
+
+.cv-user-card.selected .cv-user-sub {
+    color: #1a4fbf;
+}
+
+/* Indicador de Seleção / Seta à direita */
+.cv-user-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.cv-user-radio {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 50%;
+    border: 2px solid #cbd5e0;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cv-user-radio .cv-check-icon {
+    display: none;
+    transform: scale(0.6);
+    transition: transform 0.2s ease;
+}
+
+.cv-user-card.selected .cv-user-radio {
+    border-color: #1a4fbf;
+    background: #1a4fbf;
+    box-shadow: 0 2px 6px rgba(26, 79, 191, 0.35);
+}
+
+.cv-user-card.selected .cv-user-radio .cv-check-icon {
+    display: block;
+    transform: scale(1);
+}
+
+.cv-user-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a0aec0;
+    transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.cv-user-card:hover .cv-user-arrow {
+    color: #1a4fbf;
+    transform: translateX(3px);
+}
+
+.cv-user-card.selected .cv-user-arrow {
+    color: #1a4fbf;
 }
 
 /* ===== BUTTONS ===== */
@@ -1239,7 +1484,7 @@ body.login-page .login-container {
 }
 
 .login-form.visible {
-    max-height: 560px;
+    max-height: 850px;
     opacity: 1;
     margin-top: 20px;
 }

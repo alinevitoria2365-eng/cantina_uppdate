@@ -1,0 +1,64 @@
+# ==============================================================================
+# Colégio Coronel Venâncio - Cantina Escolar
+# Configuração Apache / Locaweb (.htaccess)
+# Destino: http://cv.educacao.ws/Cantina/
+# ==============================================================================
+
+# 1. Definir charset padrão como UTF-8
+AddDefaultCharset UTF-8
+
+# 2. Impedir listagem de diretórios por segurança
+Options -Indexes
+
+# 3. Documento padrão inicial
+DirectoryIndex index.html
+
+# 4. Tipos MIME essenciais (PWA, Fontes, SVGs e JSON)
+<IfModule mod_mime.c>
+    AddType text/html .html
+    AddType text/css .css
+    AddType application/javascript .js
+    AddType application/json .json
+    AddType application/manifest+json .webmanifest
+    AddType image/svg+xml .svg
+    AddType image/png .png
+    AddType image/jpeg .jpg .jpeg
+    AddType image/webp .webp
+    AddType font/woff .woff
+    AddType font/woff2 .woff2
+    AddType font/ttf .ttf
+</IfModule>
+
+# 5. Reescrever e garantir barra no final para subpastas
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirecionar /cantina (minúsculo) para /Cantina/ (se o servidor for case-sensitive)
+    RewriteCond %{REQUEST_URI} ^/cantina/?$ [NC]
+    RewriteRule ^ /Cantina/ [R=301,L]
+
+    # Se acessar sem barra final e for diretório, adiciona barra
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^(.*[^/])$ $1/ [L,R=301]
+</IfModule>
+
+# 6. Compressão GZIP / Deflate para alta velocidade em redes móveis
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE application/javascript application/json application/xml
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# 7. Cache de arquivos estáticos (CSS, JS, Imagens)
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 day"
+    ExpiresByType text/html "access plus 0 seconds"
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType application/manifest+json "access plus 0 seconds"
+</IfModule>
+

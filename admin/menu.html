@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cardapio.css">
 </head>
 <body class="admin-menu-page">
 <div class="container admin-menu-container cv-menu-card">
@@ -29,7 +30,7 @@
 
     <h2 class="cv-title">O que quer fazer?</h2>
     <div class="cv-divider"><span></span><i></i><span></span></div>
-    <p class="subtitle">Selecione uma operação</p>
+    <p class="subtitle" id="admin-greeting">Selecione uma operação</p>
 
     <div class="menu-grid cv-menu-grid">
         <button type="button" class="menu-btn cv-menu-btn" onclick="window.location.href='entrada.html'">
@@ -45,7 +46,9 @@
             </span>
         </button>
 
-        <button type="button" class="menu-btn cv-menu-btn" onclick="window.location.href='saida.html'">
+
+        
+       <!-- <button type="button" class="menu-btn cv-menu-btn" onclick="window.location.href='saida.html'">
             <span class="menu-icon cv-menu-icon">
                 <svg viewBox="0 0 48 48" width="26" height="26" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M24 28 V6 M24 6 L15 15 M24 6 L33 15"/>
@@ -56,9 +59,9 @@
             <span class="menu-arrow cv-menu-arrow">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1a4fbf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L16 12 L9 18"/></svg>
             </span>
-        </button>
-
-        <button type="button" class="menu-btn cv-menu-btn" onclick="window.location.href='estoque.html'">
+        </button>-->
+            
+       <!-- <button type="button" class="menu-btn cv-menu-btn" onclick="window.location.href='estoque.html'">
             <span class="menu-icon cv-menu-icon">
                 <svg viewBox="0 0 48 48" width="26" height="26" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="10" y="8" width="28" height="34" rx="3"/>
@@ -72,7 +75,7 @@
             <span class="menu-arrow cv-menu-arrow">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1a4fbf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L16 12 L9 18"/></svg>
             </span>
-        </button>
+        </button> -->
 
         <button type="button" class="menu-btn cv-menu-btn" onclick="window.location.href='pedidos.html'">
             <span class="menu-icon cv-menu-icon">
@@ -98,6 +101,23 @@
                 </svg>
             </span>
             <span class="menu-text">Histórico de Atividades</span>
+            <span class="menu-arrow cv-menu-arrow">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1a4fbf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L16 12 L9 18"/></svg>
+            </span>
+        </button>
+
+        <button type="button" class="menu-btn cv-menu-btn" id="btnCardapio" onclick="abrirCardapio()">
+            <span class="menu-icon cv-menu-icon">
+                <svg viewBox="0 0 48 48" width="26" height="26" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="8" y="10" width="32" height="30" rx="3"/>
+                    <line x1="8" y1="20" x2="40" y2="20"/>
+                    <line x1="16" y1="6" x2="16" y2="14"/>
+                    <line x1="32" y1="6" x2="32" y2="14"/>
+                    <line x1="15" y1="28" x2="33" y2="28"/>
+                    <line x1="15" y1="34" x2="27" y2="34"/>
+                </svg>
+            </span>
+            <span class="menu-text">Cardápio da Semana <span id="badgeCardapioAdmin" class="cv-cardapio-status-badge" style="display:none;"></span></span>
             <span class="menu-arrow cv-menu-arrow">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1a4fbf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L16 12 L9 18"/></svg>
             </span>
@@ -130,11 +150,18 @@
 </div>
 
     <script src="../js/app.js"></script>
+    <script src="../js/cardapio.js"></script>
     <script>
         // Proteger rota - verificar login
         document.addEventListener("DOMContentLoaded", function() {
             if (getLoggedInType() !== "admin") {
                 window.location.href = "login.html";
+                return;
+            }
+            const nome = getLoggedInName();
+            const greetingEl = document.getElementById("admin-greeting");
+            if (greetingEl && nome && nome !== "Administrador") {
+                greetingEl.textContent = `Olá, ${nome}! Selecione uma operação`;
             }
         });
     </script>

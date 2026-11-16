@@ -11,7 +11,18 @@ const DEFAULT_PRODUCTS = [
     { id: 5, nome: "Café", quantidade: 20, preco: 15.00 },
     { id: 6, nome: "Macarrão", quantidade: 35, preco: 6.90 },
     { id: 7, nome: "Leite", quantidade: 50, preco: 7.50 },
-    { id: 8, nome: "Farinha", quantidade: 28, preco: 5.90 }
+    { id: 8, nome: "Farinha", quantidade: 28, preco: 5.90 },
+    { id: 9, nome: "Carne Suína", quantidade: 30, preco: 28.00 },
+    { id: 10, nome: "Batata", quantidade: 40, preco: 6.00 },
+    { id: 11, nome: "Tomate", quantidade: 30, preco: 7.00 },
+    { id: 12, nome: "Cebola", quantidade: 30, preco: 5.50 },
+    { id: 13, nome: "Frango", quantidade: 35, preco: 19.50 },
+    { id: 14, nome: "Repolho", quantidade: 25, preco: 4.00 },
+    { id: 15, nome: "Cenoura", quantidade: 25, preco: 4.50 },
+    { id: 16, nome: "Laranja", quantidade: 60, preco: 2.00 },
+    { id: 17, nome: "Ovos", quantidade: 100, preco: 0.80 },
+    { id: 18, nome: "Banana", quantidade: 60, preco: 2.50 },
+    { id: 19, nome: "Molho de Tomate", quantidade: 30, preco: 4.20 }
 ];
 
 const DEFAULT_ADMIN = { cpf: "12345678900", senha: "admin123" };
@@ -21,6 +32,20 @@ const DEFAULT_USER = { cpf: "98765432100", senha: "usuario123" };
 function initStorage() {
     if (!localStorage.getItem("products")) {
         localStorage.setItem("products", JSON.stringify(DEFAULT_PRODUCTS));
+    } else {
+        try {
+            const current = JSON.parse(localStorage.getItem("products")) || [];
+            let updated = false;
+            DEFAULT_PRODUCTS.forEach(dp => {
+                if (!current.some(p => p.id === dp.id || p.nome.toLowerCase() === dp.nome.toLowerCase())) {
+                    current.push(dp);
+                    updated = true;
+                }
+            });
+            if (updated) {
+                localStorage.setItem("products", JSON.stringify(current));
+            }
+        } catch (e) {}
     }
     if (!localStorage.getItem("adminUser")) {
         localStorage.setItem("adminUser", JSON.stringify(DEFAULT_ADMIN));
@@ -40,6 +65,75 @@ function initStorage() {
     if (!localStorage.getItem("logs")) {
         localStorage.setItem("logs", JSON.stringify([]));
     }
+    if (!localStorage.getItem("baixasCardapio")) {
+        localStorage.setItem("baixasCardapio", JSON.stringify([]));
+    }
+    if (!localStorage.getItem("cardapioDiaQuantidades")) {
+        localStorage.setItem("cardapioDiaQuantidades", JSON.stringify({}));
+    }
+    if (!localStorage.getItem("cardapioQuantidadesMeta")) {
+        localStorage.setItem("cardapioQuantidadesMeta", JSON.stringify({}));
+    }
+}
+
+// ===== BAIXAS DO CARDÁPIO =====
+function getBaixasCardapio() {
+    const data = localStorage.getItem("baixasCardapio");
+    return data ? JSON.parse(data) : [];
+}
+
+function saveBaixasCardapio(baixas) {
+    localStorage.setItem("baixasCardapio", JSON.stringify(baixas));
+}
+
+function getUltimaBaixaDoDia(diaNome) {
+    const baixas = getBaixasCardapio();
+    const diaNorm = diaNome.toLowerCase().trim();
+    for (let i = baixas.length - 1; i >= 0; i--) {
+        if (baixas[i].diaNome && baixas[i].diaNome.toLowerCase().trim() === diaNorm) {
+            return baixas[i];
+        }
+    }
+    return null;
+}
+
+// ===== QUANTIDADES E SINCRONIZAÇÃO DO CARDÁPIO =====
+function getCardapioQuantidades() {
+    try {
+        const data = localStorage.getItem("cardapioDiaQuantidades");
+        return data ? JSON.parse(data) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveCardapioQuantidades(qtds, meta) {
+    localStorage.setItem("cardapioDiaQuantidades", JSON.stringify(qtds));
+    if (meta) {
+        localStorage.setItem("cardapioQuantidadesMeta", JSON.stringify(meta));
+    }
+}
+
+function getCardapioQuantidadesMeta() {
+    try {
+        const data = localStorage.getItem("cardapioQuantidadesMeta");
+        return data ? JSON.parse(data) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function getCardapioUltimaAlteracao() {
+    try {
+        const data = localStorage.getItem("cardapioUltimaAlteracao");
+        return data ? JSON.parse(data) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function saveCardapioUltimaAlteracao(info) {
+    localStorage.setItem("cardapioUltimaAlteracao", JSON.stringify(info));
 }
 
 // ===== LOGS DE ATIVIDADE (auditoria: acessos e alterações) =====
@@ -54,8 +148,14 @@ function saveLogs(logs) {
 
 function getLoggedInName() {
     const tipo = getLoggedInType();
-    if (tipo === "admin") return "Administrador";
-    if (tipo === "usuario") return "Usuário";
+    if (tipo === "admin") {
+        const nome = localStorage.getItem("adminNome");
+        return nome ? nome : "Administrador";
+    }
+    if (tipo === "usuario") {
+        const nome = localStorage.getItem("usuarioNome");
+        return nome ? nome : "Usuário";
+    }
     return "Visitante";
 }
 
@@ -746,27 +846,58 @@ function voltarListaPedidos() {
     renderAdminOrderList("order-list");
 }
 
-// ===== LOGIN =====
-function fazerLogin(cpf, senha, tipo) {
-    const userKey = tipo === "admin" ? "adminUser" : "usuarioUser";
-    const user = JSON.parse(localStorage.getItem(userKey));
+// Lista oficial de colaboradoras da cantina / cozinha
+const LISTA_USUARIOS = ["Fátima", "Ana", "Elaine", "Lúcia", "Lurdes"];
 
-    if (cpf === user.cpf && senha === user.senha) {
-        localStorage.setItem("loggedIn", tipo);
-        // Registrar acesso no histórico de atividades
-        const nome = tipo === "admin" ? "Administrador" : "Usuário";
+function getListaUsuarios() {
+    return LISTA_USUARIOS;
+}
+
+// Lista oficial de administradoras da cantina / gestão
+const LISTA_ADMINS = ["Rita", "Maria", "Roberta"];
+
+function getListaAdmins() {
+    return LISTA_ADMINS;
+}
+
+// ===== LOGIN =====
+function fazerLogin(cpf, senha, tipo, nomeUsuario) {
+    if (tipo === "usuario") {
+        const nomeFinal = nomeUsuario || localStorage.getItem("usuarioNome") || "Usuário";
+        localStorage.setItem("loggedIn", "usuario");
+        localStorage.setItem("usuarioNome", nomeFinal);
         const agora = new Date();
         const logs = getLogs();
         logs.push({
             id: Date.now() + Math.random(),
             data: agora.toLocaleDateString("pt-BR"),
             hora: agora.toLocaleTimeString("pt-BR"),
-            usuario: nome,
+            usuario: nomeFinal,
             acao: "login",
             detalhes: "Entrou no sistema"
         });
         saveLogs(logs);
-        showToast(`✅ Bem-vindo, ${nome}!`);
+        showToast(`✅ Bem-vinda, ${nomeFinal}!`);
+        return true;
+    }
+
+    if (tipo === "admin") {
+        const nomeFinal = nomeUsuario || localStorage.getItem("adminNome") || "Administrador";
+        localStorage.setItem("loggedIn", "admin");
+        localStorage.setItem("adminNome", nomeFinal);
+        localStorage.removeItem("usuarioNome");
+        const agora = new Date();
+        const logs = getLogs();
+        logs.push({
+            id: Date.now() + Math.random(),
+            data: agora.toLocaleDateString("pt-BR"),
+            hora: agora.toLocaleTimeString("pt-BR"),
+            usuario: nomeFinal,
+            acao: "login",
+            detalhes: "Entrou no sistema (Gestão)"
+        });
+        saveLogs(logs);
+        showToast(`✅ Bem-vinda, ${nomeFinal}!`);
         return true;
     }
     return false;
@@ -782,9 +913,12 @@ function getLoggedInType() {
 
 function logout() {
     localStorage.removeItem("loggedIn");
+    localStorage.removeItem("usuarioNome");
+    localStorage.removeItem("adminNome");
     localStorage.removeItem("cart");
     showToast("👋 Sessão encerrada.");
-    window.location.href = "../index.html";
+    const isSubfolder = window.location.pathname.includes("/admin/") || window.location.pathname.includes("/usuario/");
+    window.location.href = isSubfolder ? "../index.html" : "index.html";
 }
 
 // ===== TOAST NOTIFICATION =====

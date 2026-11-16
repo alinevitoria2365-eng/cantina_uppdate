@@ -299,10 +299,11 @@
             const resumo = document.getElementById("resumo-logs");
 
             // Resumo
+            const listaAdmins = typeof getListaAdmins === "function" ? getListaAdmins() : ["Rita", "Maria", "Roberta"];
             const totalAcessos = logs.filter(l => l.acao === "login").length;
             const totalAlteracoes = logs.filter(l => l.acao !== "login").length;
-            const acessosUsuario = logs.filter(l => l.acao === "login" && l.usuario === "Usuário").length;
-            const acessosAdmin = logs.filter(l => l.acao === "login" && l.usuario === "Administrador").length;
+            const acessosAdmin = logs.filter(l => l.acao === "login" && (l.usuario === "Administrador" || listaAdmins.includes(l.usuario))).length;
+            const acessosUsuario = logs.filter(l => l.acao === "login" && l.usuario !== "Administrador" && !listaAdmins.includes(l.usuario)).length;
 
             resumo.innerHTML = `
                 <div class="stats-grid">
@@ -316,7 +317,7 @@
                     </div>
                 </div>
                 <div style="text-align:center;font-size:13px;color:#718096;margin-bottom:12px;">
-                    👤 Usuário entrou <strong>${acessosUsuario}</strong> vez(es) &nbsp;|&nbsp; 🛡️ Administrador entrou <strong>${acessosAdmin}</strong> vez(es)
+                    👩‍🍳 Cozinha entrou <strong>${acessosUsuario}</strong> vez(es) &nbsp;|&nbsp; 🛡️ Gestão entrou <strong>${acessosAdmin}</strong> vez(es)
                 </div>
             `;
 
