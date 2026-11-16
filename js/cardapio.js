@@ -1,11 +1,14 @@
 /* =====================================================================
-   CARDÁPIO REGULAR - SETEMBRO / 2026
+   CARDÁPIO REGULAR - NOVEMBRO / 2026
    Uso: o botão do menu chama abrirCardapio()
    Controle de itens para uso no dia, baixa no estoque e impressão.
    ===================================================================== */
 
+const CARDAPIO_VERSION = "2026-11-sem3";
+
 const DEFAULT_CARDAPIO = {
-    titulo: "CARDÁPIO REGULAR - SETEMBRO / 2026",
+    versao: CARDAPIO_VERSION,
+    titulo: "CARDÁPIO REGULAR - NOVEMBRO / 2026",
     cabecalhoGoverno: [
         "Governo do Estado de São Paulo",
         "Secretaria de Estado da Educação",
@@ -17,7 +20,7 @@ const DEFAULT_CARDAPIO = {
         "A Diretoria Técnica da COALE no uso de suas atribuições, comunica aos Senhores Dirigentes " +
         "Regionais de Ensino, Supervisores e Diretores de Escolas do Sistema Centralizado de " +
         "Alimentação Escolar, o Cardápio Regular",
-    semana: "4",
+    semana: "3",
     periodo: {
         titulo: "Período parcial:",
         linhas: [
@@ -28,110 +31,87 @@ const DEFAULT_CARDAPIO = {
     },
     dias: [
         {
-            nome: "Segunda", data: "21/set",
+            nome: "Segunda", data: "16/nov",
             itens: [
-                "FEIJÃO (opcional)",
-                "ARROZ CARRETEIRO (arroz, carne suína, tomate, cebola, salsinha)",
-                "BATATA AO FORNO"
+                "ARROZ COM CENOURA E FEIJÃO",
+                "OMELETE DE FORNO (ovos, cebola, salsinha e cebolinha)",
+                "LIMÃOGRETE (tomate, cebola, salsinha e limão)"
             ],
             ingredientes: [
                 { nome: "Arroz", quantidadePadrao: 5, unidade: "kg/pct" },
                 { nome: "Feijão", quantidadePadrao: 3, unidade: "kg/pct" },
+                { nome: "Cenoura", quantidadePadrao: 2, unidade: "kg" },
                 { nome: "Óleo", quantidadePadrao: 2, unidade: "un" },
-                { nome: "Carne Suína", quantidadePadrao: 4, unidade: "kg" },
-                { nome: "Batata", quantidadePadrao: 6, unidade: "kg" },
+                { nome: "Ovos", quantidadePadrao: 30, unidade: "un" },
                 { nome: "Tomate", quantidadePadrao: 3, unidade: "kg" },
                 { nome: "Cebola", quantidadePadrao: 2, unidade: "kg" }
             ]
         },
         {
-            nome: "Terça", data: "22/set",
+            nome: "Terça", data: "17/nov",
             itens: [
                 "ARROZ E FEIJÃO",
-                "FRANGO ACEBOLADO (peito de frango em cubos, cebola, salsinha) OU ISCAS BOVINA ACEBOLADA (patinho, cebola, salsinha)",
-                "SALADA DE REPOLHO, TOMATE E CENOURA"
+                "CARNE BOVINA MOÍDA À PRIMAVERA (carne bovina moída, cenoura, pimentão, cebola)",
+                "BATATA EM CUBOS (cozida)"
             ],
             ingredientes: [
                 { nome: "Arroz", quantidadePadrao: 5, unidade: "kg/pct" },
                 { nome: "Feijão", quantidadePadrao: 3, unidade: "kg/pct" },
                 { nome: "Óleo", quantidadePadrao: 2, unidade: "un" },
-                { nome: "Frango", quantidadePadrao: 6, unidade: "kg" },
+                { nome: "Cenoura", quantidadePadrao: 2, unidade: "kg" },
                 { nome: "Cebola", quantidadePadrao: 2, unidade: "kg" },
-                { nome: "Repolho", quantidadePadrao: 3, unidade: "un" },
-                { nome: "Tomate", quantidadePadrao: 3, unidade: "kg" },
-                { nome: "Cenoura", quantidadePadrao: 2, unidade: "kg" }
+                { nome: "Batata", quantidadePadrao: 6, unidade: "kg" }
             ]
         },
         {
-            nome: "Quarta", data: "23/set",
+            nome: "Quarta", data: "18/nov",
             itens: [
-                "ARROZ",
-                "FEIJOADA (feijão preto, carne suína e cebolinha)<sup>1</sup>",
-                "FAROFA TEMPERADA (farinha de mandioca e cebola)",
-                "LIMÃOGRETE (tomate, cebola, salsinha e limão)",
-                "LARANJA"
+                "MACARRÃO AO MOLHO DE TOMATE (extrato de tomate, cebola, salsinha)",
+                "FILÉ DE COXA E SOBRECOXA AO ASSADO OU COZIDO (filé de coxa e sobrecoxa, extrato de tomate e alho) — NOVA RECEITA",
+                "SALADA DE PEPINO (temperada com limão)",
+                "MAMÃO"
             ],
             ingredientes: [
-                { nome: "Arroz", quantidadePadrao: 5, unidade: "kg/pct" },
-                { nome: "Feijão", quantidadePadrao: 4, unidade: "kg/pct" },
-                { nome: "Farinha", quantidadePadrao: 3, unidade: "kg/pct" },
-                { nome: "Carne Suína", quantidadePadrao: 5, unidade: "kg" },
+                { nome: "Macarrão", quantidadePadrao: 6, unidade: "kg/pct" },
+                { nome: "Molho de Tomate", quantidadePadrao: 4, unidade: "un" },
+                { nome: "Frango", quantidadePadrao: 6, unidade: "kg" },
                 { nome: "Óleo", quantidadePadrao: 2, unidade: "un" },
-                { nome: "Tomate", quantidadePadrao: 3, unidade: "kg" },
-                { nome: "Cebola", quantidadePadrao: 2, unidade: "kg" },
-                { nome: "Laranja", quantidadePadrao: 30, unidade: "un" }
+                { nome: "Cebola", quantidadePadrao: 2, unidade: "kg" }
             ]
         },
         {
-            nome: "Quinta", data: "24/set",
+            nome: "Quinta", data: "19/nov",
             itens: [
-                "ARROZ COM CENOURA E FEIJÃO CARIOCA",
-                "OVOS MEXIDOS (ovos, cebola, salsinha e cebolinha)",
-                "SALADA DE ALFACE, TOMATE E CEBOLA (temperada com limão)",
+                "ARROZ E FEIJÃO",
+                "CARNE SUÍNA ACEBOLADA (cubos ou iscas suína, cebola, salsinha e cebolinha)",
+                "PURÊ RÚSTICO DE ABÓBORA - QUIBEBE (abóbora)",
                 "BANANA"
             ],
             ingredientes: [
                 { nome: "Arroz", quantidadePadrao: 5, unidade: "kg/pct" },
                 { nome: "Feijão", quantidadePadrao: 3, unidade: "kg/pct" },
+                { nome: "Carne Suína", quantidadePadrao: 5, unidade: "kg" },
                 { nome: "Óleo", quantidadePadrao: 2, unidade: "un" },
-                { nome: "Ovos", quantidadePadrao: 30, unidade: "un" },
-                { nome: "Cenoura", quantidadePadrao: 2, unidade: "kg" },
-                { nome: "Tomate", quantidadePadrao: 3, unidade: "kg" },
                 { nome: "Cebola", quantidadePadrao: 2, unidade: "kg" },
                 { nome: "Banana", quantidadePadrao: 35, unidade: "un" }
             ]
         },
         {
-            nome: "Sexta", data: "25/set",
+            nome: "Sexta", data: "20/nov",
             itens: [
-                "MACARRÃO AO MOLHO DE TOMATE (extrato de tomate, cebola, salsinha)",
-                "FRANGO ASSADO (sassami)",
-                "SALADA DE ACELGA E CENOURA",
-                "*COUVE -FLOR*"
+                "FERIADO"
             ],
-            ingredientes: [
-                { nome: "Macarrão", quantidadePadrao: 6, unidade: "kg/pct" },
-                { nome: "Frango", quantidadePadrao: 6, unidade: "kg" },
-                { nome: "Molho de Tomate", quantidadePadrao: 4, unidade: "un" },
-                { nome: "Óleo", quantidadePadrao: 2, unidade: "un" },
-                { nome: "Cebola", quantidadePadrao: 2, unidade: "kg" },
-                { nome: "Cenoura", quantidadePadrao: 2, unidade: "kg" }
-            ]
+            ingredientes: []
         }
     ],
     nutrientesCabecalho: ["Kcal", "Prot (g)", "Prot (%)", "Lip (g)", "Lip (%)", "CHO (g)", "CHO (%)"],
     nutrientes: [
-        { nivel: "ENSINO MÉDIO",                   valores: ["522", "26", "20", "7", "17%", "81", "61%"] },
-        { nivel: "EJA - 19 a 30 anos",             valores: ["522", "26", "20", "7", "17%", "81", "61%"] },
-        { nivel: "EJA - 31 a 60 anos",             valores: ["522", "26", "20", "7", "17%", "81", "61%"] },
-        { nivel: "ENSINO FUNDAMENTAL ANOS FINAIS", valores: ["409", "21", "21%", "6", "17%", "52", "60%"] },
-        { nivel: "ENSINO FUNDAMENTAL - ANOS INICIAIS", valores: ["409", "21", "21%", "6", "17%", "52", "60%"] }
+        { nivel: "ENSINO MÉDIO", valores: ["520", "26", "20", "7", "17%", "81", "61%"] }
     ],
     notas: [
-        "1. O feijão preto separadamente da carne suína, de acordo com a aceitação dos estudantes.",
-        "2. Os produtos congelados poderão ser substituídos conforme a disponibilidade na Unidade Escolar.",
-        "3. As receitas das preparações constam nas FTPs.",
-        "4. Hortifruti (frutas, verduras e legumes) deverão ser servidos de acordo com o cardápio, abastecimento e amadurecimento dos produtos. O cardápio do dia poderá ser complementado com outras hortaliças disponíveis."
+        "1. Os produtos congelados poderão ser substituídos conforme a disponibilidade na Unidade Escolar.",
+        "2. As receitas das preparações constam nas FTPs. As receitas para o preparo do filé de coxa e sobrecoxa também estão disponíveis nas FTPs.",
+        "3. Hortifruti (frutas, verduras e legumes) deverão ser servidos de acordo com o cardápio, abastecimento e amadurecimento dos produtos. O cardápio do dia poderá ser complementado com outras hortaliças disponíveis."
     ]
 };
 
@@ -145,7 +125,7 @@ function getCardapioData() {
         const salvo = localStorage.getItem("cardapioData");
         if (salvo) {
             const parsed = JSON.parse(salvo);
-            if (parsed && Array.isArray(parsed.dias) && parsed.dias.length > 0) {
+            if (parsed && parsed.versao === CARDAPIO_VERSION && Array.isArray(parsed.dias) && parsed.dias.length > 0) {
                 return parsed;
             }
         }

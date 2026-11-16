@@ -74,6 +74,12 @@ function initStorage() {
     if (!localStorage.getItem("cardapioQuantidadesMeta")) {
         localStorage.setItem("cardapioQuantidadesMeta", JSON.stringify({}));
     }
+    if (!localStorage.getItem("cozinheiras")) {
+        localStorage.setItem("cozinheiras", JSON.stringify([]));
+    }
+    if (!localStorage.getItem("cozinheirasRemovidas")) {
+        localStorage.setItem("cozinheirasRemovidas", JSON.stringify([]));
+    }
 }
 
 // ===== BAIXAS DO CARDÁPIO =====
@@ -866,6 +872,7 @@ function fazerLogin(cpf, senha, tipo, nomeUsuario) {
         const nomeFinal = nomeUsuario || localStorage.getItem("usuarioNome") || "Usuário";
         localStorage.setItem("loggedIn", "usuario");
         localStorage.setItem("usuarioNome", nomeFinal);
+        localStorage.setItem("ultimoUsuarioLogado", nomeFinal);
         const agora = new Date();
         const logs = getLogs();
         logs.push({
@@ -877,7 +884,6 @@ function fazerLogin(cpf, senha, tipo, nomeUsuario) {
             detalhes: "Entrou no sistema"
         });
         saveLogs(logs);
-        showToast(`✅ Bem-vinda, ${nomeFinal}!`);
         return true;
     }
 
@@ -897,7 +903,6 @@ function fazerLogin(cpf, senha, tipo, nomeUsuario) {
             detalhes: "Entrou no sistema (Gestão)"
         });
         saveLogs(logs);
-        showToast(`✅ Bem-vinda, ${nomeFinal}!`);
         return true;
     }
     return false;
@@ -962,3 +967,205 @@ document.addEventListener("DOMContentLoaded", function() {
     updateCartBadge();
 });
 
+
+
+// ===== COZINHEIRAS (cadastro, remoção e exibição no login) =====
+const COZINHEIRAS_PADRAO = ["Ana Maria", "Rose", "Paula", "Fabiana"];
+
+function lerListaStorage(chave) {
+    try {
+        const data = localStorage.getItem(chave);
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function getCozinheiras() {
+    return lerListaStorage("cozinheiras");
+}
+
+function saveCozinheiras(arr) {
+    localStorage.setItem("cozinheiras", JSON.stringify(arr));
+}
+
+function getCozinheirasRemovidas() {
+    return lerListaStorage("cozinheirasRemovidas");
+}
+
+function saveCozinheirasRemovidas(arr) {
+    localStorage.setItem("cozinheirasRemovidas", JSON.stringify(arr));
+}
+
+function nomeDaCozinheira(c) {
+    return ((typeof c === "string" ? c : (c && c.nome)) || "").trim();
+}
+
+function getCozinheirasAtivas() {
+    const removidas = getCozinheirasRemovidas().map(n => n.toLowerCase());
+    const ativas = [];
+    const vistos = new Set();
+
+    COZINHEIRAS_PADRAO.forEach(nome => {
+        const key = nome.toLowerCase();
+        if (!removidas.includes(key) && !vistos.has(key)) {
+            vistos.add(key);
+            ativas.push({ nome: nome, padrao: true });
+        }
+    });
+
+    getCozinheiras().forEach(c => {
+        const nome = nomeDaCozinheira(c);
+        if (!nome) return;
+        const key = nome.toLowerCase();
+        if (!removidas.includes(key) && !vistos.has(key)) {
+            vistos.add(key);
+            ativas.push({ nome: nome, padrao: false });
+        }
+    });
+
+    return ativas;
+}
+
+function adicionarCozinheira(nome) {
+    const nomeLimpo = (nome || "").trim();
+    if (!nomeLimpo) {
+        throw new Error("Informe o nome da cozinheira");
+    }
+    if (getCozinheirasAtivas().some(c => c.nome.toLowerCase() === nomeLimpo.toLowerCase())) {
+        throw new Error("Já existe uma cozinheira cadastrada com este nome");
+    }
+
+    const removidas = getCozinheirasRemovidas().filter(n => n.toLowerCase() !== nomeLimpo.toLowerCase());
+    saveCozinheirasRemovidas(removidas);
+
+    const ehPadrao = COZINHEIRAS_PADRAO.some(n => n.toLowerCase() === nomeLimpo.toLowerCase());
+    if (!ehPadrao) {
+        const lista = getCozinheiras();
+        lista.push({ nome: nomeLimpo });
+        saveCozinheiras(lista);
+    }
+
+    registrarLog("alteracao", `Cadastrou nova cozinheira: "${nomeLimpo}"`);
+}
+
+function removerCozinheira(nome) {
+    const nomeLimpo = (nome || "").trim();
+    if (!nomeLimpo) return false;
+
+    const lista = getCozinheiras().filter(c => nomeDaCozinheira(c).toLowerCase() !== nomeLimpo.toLowerCase());
+    saveCozinheiras(lista);
+
+    const removidas = getCozinheirasRemovidas();
+    if (!removidas.some(n => n.toLowerCase() === nomeLimpo.toLowerCase())) {
+        removidas.push(nomeLimpo);
+        saveCozinheirasRemovidas(removidas);
+    }
+
+    registrarLog("alteracao", `Removeu a cozinheira: "${nomeLimpo}"`);
+    return true;
+}
+
+function renderCozinheirasExtras(containerId, selectId, onSelectFnName) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const select = selectId ? document.getElementById(selectId) : null;
+    const removidas = getCozinheirasRemovidas().map(n => n.toLowerCase());
+
+    // Esconde as cozinheiras removidas pelo administrador
+    Array.from(container.querySelectorAll(".cv-user-card")).forEach(el => {
+        const nomeCard = (el.getAttribute("data-nome") || "").trim().toLowerCase();
+        if (removidas.includes(nomeCard)) el.remove();
+    });
+    if (select) {
+        Array.from(select.options).forEach(opt => {
+            if (opt.value && removidas.includes(opt.value.trim().toLowerCase())) opt.remove();
+        });
+    }
+
+    // Adiciona as cozinheiras cadastradas
+    getCozinheiras().forEach(c => {
+        const nome = nomeDaCozinheira(c);
+        if (!nome || removidas.includes(nome.toLowerCase())) return;
+
+        const jaExiste = Array.from(container.querySelectorAll(".cv-user-card"))
+            .some(el => (el.getAttribute("data-nome") || "").toLowerCase() === nome.toLowerCase());
+        if (jaExiste) return;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "cv-user-card";
+        btn.setAttribute("data-nome", nome);
+        btn.addEventListener("click", function() {
+            if (typeof window[onSelectFnName] === "function") {
+                window[onSelectFnName](nome, btn);
+            }
+        });
+
+        btn.innerHTML = `
+            <div class="cv-user-avatar">
+                <span class="cv-user-initial"></span>
+                <span class="cv-user-badge">👩‍🍳</span>
+            </div>
+            <div class="cv-user-info">
+                <span class="cv-user-name"></span>
+                <span class="cv-user-sub">Colaboradora da Cozinha</span>
+            </div>
+            <div class="cv-user-indicator">
+                <span class="cv-user-radio">
+                    <svg class="cv-check-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </span>
+                <span class="cv-user-arrow">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#1a4fbf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L16 12 L9 18"/></svg>
+                </span>
+            </div>
+        `;
+        btn.querySelector(".cv-user-initial").textContent = nome.charAt(0).toUpperCase();
+        btn.querySelector(".cv-user-name").textContent = nome;
+        container.appendChild(btn);
+
+        if (select && !Array.from(select.options).some(o => o.value.toLowerCase() === nome.toLowerCase())) {
+            const opt = document.createElement("option");
+            opt.value = nome;
+            opt.textContent = nome;
+            select.appendChild(opt);
+        }
+    });
+}
+
+// ===== MENSAGEM DE BOAS-VINDAS (retângulo azul) =====
+function showWelcomeBanner(nome, callback) {
+    const existing = document.querySelector(".cv-welcome-rect");
+    if (existing) existing.remove();
+
+    const banner = document.createElement("div");
+    banner.className = "cv-welcome-rect";
+    banner.textContent = `Bem-vinda ${nome}!`;
+    banner.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(135deg, #1a4fbf 0%, #12305c 100%);
+        color: #ffffff;
+        padding: 20px 36px;
+        border-radius: 14px;
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 22px;
+        font-weight: 700;
+        box-shadow: 0 16px 40px rgba(18, 48, 92, 0.45);
+        border: 2px solid rgba(255, 255, 255, 0.28);
+        z-index: 10000;
+        text-align: center;
+        min-width: 240px;
+        max-width: 90vw;
+    `;
+    document.body.appendChild(banner);
+
+    if (typeof callback === "function") {
+        setTimeout(callback, 1100);
+    }
+}

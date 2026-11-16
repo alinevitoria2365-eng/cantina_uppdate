@@ -6,7 +6,7 @@
     <title>Usuário - Login</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/main.css">
 </head>
 <body class="cv-page-body">
     <div class="container cv-card cv-login-card">
@@ -235,11 +235,17 @@
             }
 
             if (fazerLogin(null, null, "usuario", nomeUsuario)) {
-                window.location.href = "menu.html";
+                showWelcomeBanner(nomeUsuario, function() {
+                    window.location.href = "menu.html";
+                });
             } else {
                 alert("Erro ao realizar login!");
             }
         }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            renderCozinheirasExtras("lista-usuarios-login", "select-usuario", "selecionarUsuarioLogin");
+        });
     </script>
 </body>
 </html>

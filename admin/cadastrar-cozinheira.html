@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin – Gerenciar Cozinheiras</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/main.css">
+    <style>
+        .coz-section-divider {
+            margin: 24px 0 14px;
+            border-top: 1.5px solid #e2e8f0;
+            padding-top: 18px;
+        }
+        .coz-section-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: #12305c;
+            margin: 0 0 12px;
+            text-align: center;
+        }
+        .coz-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .coz-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #f8fafc;
+            border: 1.5px solid #dbe4f3;
+            border-radius: 12px;
+        }
+        .coz-item-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+        .coz-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1a4fbf, #12305c);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .coz-name {
+            font-weight: 700;
+            color: #12305c;
+            font-size: 15px;
+            word-break: break-word;
+        }
+        .coz-tag {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #475569;
+            background: #e2e8f0;
+            padding: 2px 7px;
+            border-radius: 999px;
+            margin-left: 6px;
+        }
+        .coz-remove-btn {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            border-radius: 9px;
+            padding: 7px 12px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .coz-remove-btn:hover {
+            background: #dc2626;
+            color: #ffffff;
+            border-color: #dc2626;
+        }
+        .coz-empty {
+            text-align: center;
+            padding: 18px 12px;
+            color: #64748b;
+            font-size: 13.5px;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body class="admin-cadastrar-page">
+<div class="container admin-cadastrar-container cv-card">
+
+    <div class="cv-logo">
+        <img class="cv-shield" src="../logocv.png" alt="Logotipo Coronel Venâncio">
+        <span class="cv-logo-title">Coronel Venâncio</span>
+        <span class="cv-logo-underline"></span>
+    </div>
+
+    <h2 class="cv-title">Gerenciar cozinheiras</h2>
+    <div class="cv-divider"><span></span><i></i><span></span></div>
+
+    <form id="cadastrar-form" class="cv-form">
+        <div class="form-group">
+            <label for="nome">Cadastrar nova cozinheira</label>
+            <input type="text" id="nome" required placeholder="Ex.: Ana Silva">
+        </div>
+        <button type="submit" class="btn btn-primary cv-back-btn">Cadastrar</button>
+    </form>
+
+    <div class="coz-section-divider">
+        <h3 class="coz-section-title">Cozinheiras ativas no login</h3>
+        <div id="lista-cozinheiras" class="coz-list"></div>
+    </div>
+
+    <div class="footer-bar cv-back-bar">
+        <button type="button" class="btn btn-outline cv-back-btn" onclick="window.location.href='menu.html'">
+            <span class="cv-back-icon">
+                <svg viewBox="0 0 24 24" width="22" height="20" fill="none" stroke="#12305c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 12 H4 M4 12 L10 6 M4 12 L10 18"/>
+                </svg>
+            </span>
+            <span class="cv-back-divider"></span>
+            <span class="cv-back-text">Voltar ao Menu</span>
+        </button>
+    </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+    function renderListaCozinheiras() {
+        const container = document.getElementById('lista-cozinheiras');
+        const lista = getCozinheirasAtivas();
+
+        if (!lista.length) {
+            container.innerHTML = '<div class="coz-empty">Nenhuma cozinheira ativa no momento.</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        lista.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'coz-item';
+
+            const left = document.createElement('div');
+            left.className = 'coz-item-left';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'coz-avatar';
+            avatar.textContent = item.nome.charAt(0).toUpperCase();
+
+            const nameWrap = document.createElement('div');
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'coz-name';
+            nameSpan.textContent = item.nome;
+            nameWrap.appendChild(nameSpan);
+
+            const tag = document.createElement('span');
+            tag.className = 'coz-tag';
+            tag.textContent = item.padrao ? 'Padrão' : 'Cadastrada';
+            nameWrap.appendChild(tag);
+
+            left.appendChild(avatar);
+            left.appendChild(nameWrap);
+
+            const btnRemover = document.createElement('button');
+            btnRemover.type = 'button';
+            btnRemover.className = 'coz-remove-btn';
+            btnRemover.textContent = '🗑️ Remover';
+            btnRemover.addEventListener('click', () => {
+                if (!confirm(`Deseja remover "${item.nome}" da lista de login?`)) return;
+                removerCozinheira(item.nome);
+                showToast(`🗑️ Cozinheira "${item.nome}" removida.`);
+                renderListaCozinheiras();
+            });
+
+            row.appendChild(left);
+            row.appendChild(btnRemover);
+            container.appendChild(row);
+        });
+    }
+
+    document.getElementById('cadastrar-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const input = document.getElementById('nome');
+        const nome = input.value.trim();
+        if (!nome) {
+            alert('Por favor, informe o nome da cozinheira.');
+            return;
+        }
+        try {
+            adicionarCozinheira(nome);
+            input.value = '';
+            showToast(`✅ Cozinheira "${nome}" cadastrada!`);
+            renderListaCozinheiras();
+        } catch (err) {
+            alert(err.message || 'Erro ao cadastrar cozinheira.');
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', renderListaCozinheiras);
+</script>
+</body>
+</html>

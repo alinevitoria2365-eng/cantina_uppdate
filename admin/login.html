@@ -6,7 +6,7 @@
     <title>Admin - Login</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/main.css">
 </head>
 <body class="cv-page-body">
     <div class="container cv-card cv-login-card">
@@ -159,7 +159,7 @@
             // Atualiza e mostra o botão
             const btn = document.getElementById("btn-entrar-admin");
             if (btn) {
-                btn.style.display = "flex";
+                btn.style.display = "inline-block";
                 btn.textContent = `Entrar como ${nome} →`;
             }
 
@@ -185,7 +185,9 @@
             }
 
             if (fazerLogin(null, null, "admin", nomeAdmin)) {
-                window.location.href = "menu.html";
+                showWelcomeBanner(nomeAdmin, function() {
+                    window.location.href = "menu.html";
+                });
             } else {
                 alert("Erro ao realizar login!");
             }

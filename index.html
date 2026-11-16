@@ -17,7 +17,7 @@
     <title>Cantina Escolar - Sistema de Estoques e Pedidos</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/main.css">
     <style>
         /* ===== TELA INICIAL ANIMADA (SPLASH SCREEN) ===== */
         .splash-screen {
@@ -521,7 +521,9 @@
                     return;
                 }
                 if (fazerLogin(null, null, 'usuario', nome)) {
-                    window.location.href = 'usuario/menu.html';
+                    showWelcomeBanner(nome, function() {
+                        window.location.href = 'usuario/menu.html';
+                    });
                 }
                 return;
             }
@@ -534,7 +536,9 @@
                     return;
                 }
                 if (fazerLogin(null, null, 'admin', nome)) {
-                    window.location.href = 'admin/menu.html';
+                    showWelcomeBanner(nome, function() {
+                        window.location.href = 'admin/menu.html';
+                    });
                 }
                 return;
             }
@@ -542,6 +546,8 @@
 
         // Enter navega entre os campos e dispara o login
         document.addEventListener('DOMContentLoaded', function() {
+            renderCozinheirasExtras('lista-usuarios-index', 'select-usuario', 'selecionarUsuarioIndex');
+
             const cpf = document.getElementById('cpf');
             const senha = document.getElementById('senha');
             const selectUser = document.getElementById('select-usuario');
