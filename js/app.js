@@ -35,9 +35,12 @@ function initStorage() {
     } else {
         try {
             const current = JSON.parse(localStorage.getItem("products")) || [];
+            const removidos = JSON.parse(localStorage.getItem("produtosRemovidos") || "[]");
+            const removidosLower = removidos.map(r => String(r).toLowerCase().trim());
             let updated = false;
             DEFAULT_PRODUCTS.forEach(dp => {
-                if (!current.some(p => p.id === dp.id || p.nome.toLowerCase() === dp.nome.toLowerCase())) {
+                const foiRemovido = removidosLower.includes(dp.nome.toLowerCase().trim()) || removidos.includes(dp.id);
+                if (!foiRemovido && !current.some(p => p.id === dp.id || p.nome.toLowerCase() === dp.nome.toLowerCase())) {
                     current.push(dp);
                     updated = true;
                 }
@@ -79,6 +82,9 @@ function initStorage() {
     }
     if (!localStorage.getItem("cozinheirasRemovidas")) {
         localStorage.setItem("cozinheirasRemovidas", JSON.stringify([]));
+    }
+    if (!localStorage.getItem("produtosRemovidos")) {
+        localStorage.setItem("produtosRemovidos", JSON.stringify([]));
     }
 }
 
@@ -187,6 +193,77 @@ function getProducts() {
 
 function saveProducts(products) {
     localStorage.setItem("products", JSON.stringify(products));
+    notificarAtualizacaoEstoque();
+}
+
+const _estoqueCallbacks = [];
+let _estoqueSyncInicializado = false;
+let _estoqueBroadcastChannel = null;
+
+function _executarCallbacksEstoque() {
+    _estoqueCallbacks.forEach(cb => {
+        try { cb(); } catch (e) {}
+    });
+}
+
+function notificarAtualizacaoEstoque() {
+    try {
+        window.dispatchEvent(new CustomEvent("estoqueAtualizado"));
+    } catch (e) {}
+    try {
+        if (typeof BroadcastChannel !== "undefined") {
+            if (!_estoqueBroadcastChannel) {
+                _estoqueBroadcastChannel = new BroadcastChannel("cantina_estoque");
+            }
+            _estoqueBroadcastChannel.postMessage({ tipo: "atualizado", ts: Date.now() });
+        }
+    } catch (e) {}
+}
+
+function _iniciarSincronizacaoEstoque() {
+    if (_estoqueSyncInicializado) return;
+    _estoqueSyncInicializado = true;
+
+    window.addEventListener("storage", function(e) {
+        if (e.key === "products" || e.key === "produtosRemovidos") {
+            _executarCallbacksEstoque();
+        }
+    });
+
+    window.addEventListener("estoqueAtualizado", _executarCallbacksEstoque);
+
+    window.addEventListener("pageshow", function(e) {
+        if (e.persisted) {
+            _executarCallbacksEstoque();
+        }
+    });
+
+    document.addEventListener("visibilitychange", function() {
+        if (!document.hidden) {
+            _executarCallbacksEstoque();
+        }
+    });
+
+    window.addEventListener("focus", _executarCallbacksEstoque);
+
+    try {
+        if (typeof BroadcastChannel !== "undefined") {
+            if (!_estoqueBroadcastChannel) {
+                _estoqueBroadcastChannel = new BroadcastChannel("cantina_estoque");
+            }
+            _estoqueBroadcastChannel.addEventListener("message", function() {
+                _executarCallbacksEstoque();
+            });
+        }
+    } catch (e) {}
+}
+
+function registrarAtualizacaoEstoque(callback) {
+    if (typeof callback !== "function") return;
+    _iniciarSincronizacaoEstoque();
+    if (!_estoqueCallbacks.includes(callback)) {
+        _estoqueCallbacks.push(callback);
+    }
 }
 
 function getProductById(id) {
@@ -237,7 +314,23 @@ function updateProductQuantity(id, delta) {
     return false;
 }
 
+let _lastProductListArgs = null;
+let _productListSyncRegistrado = false;
+
 function renderProductList(containerId, mode = "view", showActions = true) {
+    _lastProductListArgs = { containerId, mode, showActions };
+    if (!_productListSyncRegistrado) {
+        _productListSyncRegistrado = true;
+        registrarAtualizacaoEstoque(function() {
+            if (_lastProductListArgs) {
+                const { containerId: cid, mode: m, showActions: sa } = _lastProductListArgs;
+                if (document.getElementById(cid)) {
+                    renderProductList(cid, m, sa);
+                }
+            }
+        });
+    }
+
     const products = getProducts();
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -258,7 +351,7 @@ function renderProductList(containerId, mode = "view", showActions = true) {
             <li class="product-item" data-id="${p.id}">
                 <div class="product-info">
                     <span class="product-name">${p.nome}</span>
-                    <span class="product-qty">Qtd: <strong id="qty-${p.id}">${p.quantidade}</strong></span>
+                    <span class="product-qty">Qtd: <strong id="qty-${p.id}">${p.quantidade}</strong><span id="qty-preview-${p.id}"></span></span>
                 </div>
                 <div class="product-actions">
         `;
@@ -293,7 +386,15 @@ function getPendingQty(id, mode) {
 }
 
 function setPendingQty(id, mode, qty) {
-    if (qty <= 0) {
+    if (mode === "entrada") {
+        if (qty === 0 || isNaN(qty)) {
+            delete pendingChanges[`${mode}-${id}`];
+        } else {
+            pendingChanges[`${mode}-${id}`] = qty;
+        }
+        return;
+    }
+    if (qty <= 0 || isNaN(qty)) {
         delete pendingChanges[`${mode}-${id}`];
     } else {
         pendingChanges[`${mode}-${id}`] = qty;
@@ -301,34 +402,112 @@ function setPendingQty(id, mode, qty) {
 }
 
 function hasPendingChanges(mode) {
-    return Object.keys(pendingChanges).some(key => key.startsWith(`${mode}-`) && pendingChanges[key] > 0);
+    return Object.keys(pendingChanges).some(key => {
+        if (!key.startsWith(`${mode}-`)) return false;
+        const val = pendingChanges[key];
+        return mode === "entrada" ? val !== 0 : val > 0;
+    });
+}
+
+function getMinPendingQty(id, mode) {
+    if (mode === "entrada") {
+        const p = getProductById(id);
+        return p ? -Number(p.quantidade || 0) : 0;
+    }
+    return 0;
+}
+
+function updateQtyPreview(id, mode) {
+    const previewEl = document.getElementById(`qty-preview-${id}`);
+    if (!previewEl) return;
+    if (mode !== "entrada") {
+        previewEl.innerHTML = "";
+        return;
+    }
+    const delta = getPendingQty(id, mode);
+    if (delta === 0) {
+        previewEl.innerHTML = "";
+        return;
+    }
+    const p = getProductById(id);
+    const atual = p ? Number(p.quantidade || 0) : 0;
+    const nova = Math.max(0, atual + delta);
+    const cor = delta < 0 ? "#c53030" : "#276749";
+    const sinal = delta > 0 ? `+${delta}` : `${delta}`;
+    previewEl.innerHTML = ` <span style="color:${cor};font-weight:700;">(${sinal} → ${nova})</span>`;
 }
 
 function resetPendingChanges() {
     pendingChanges = {};
     document.querySelectorAll('[id^="change-qty-"]').forEach(el => {
-        el.textContent = '0';
+        if (el.tagName === 'INPUT') {
+            el.value = '0';
+        } else {
+            el.textContent = '0';
+        }
+    });
+    document.querySelectorAll('[id^="qty-preview-"]').forEach(el => {
+        el.innerHTML = '';
     });
 }
 
+function setQtyElementDisplay(id, val) {
+    const el = document.getElementById(`change-qty-${id}`);
+    if (!el) return;
+    if (el.tagName === 'INPUT') {
+        el.value = val;
+    } else {
+        el.textContent = val;
+    }
+}
+
 function changeQty(id, delta, mode) {
+    const minVal = getMinPendingQty(id, mode);
     const newVal = getPendingQty(id, mode) + delta;
-    if (newVal >= 0) {
+    if (newVal >= minVal) {
         setPendingQty(id, mode, newVal);
-        const el = document.getElementById(`change-qty-${id}`);
-        if (el) el.textContent = newVal;
+        setQtyElementDisplay(id, newVal);
+        updateQtyPreview(id, mode);
         if (mode === "entrada" || mode === "saida") {
             updateConfirmButton(mode);
         }
     }
 }
 
+function setQtyFromInput(id, rawValue, mode) {
+    if (rawValue === "" || rawValue === "-") {
+        setPendingQty(id, mode, 0);
+        updateQtyPreview(id, mode);
+        if (mode === "entrada" || mode === "saida") {
+            updateConfirmButton(mode);
+        }
+        return;
+    }
+    const minVal = getMinPendingQty(id, mode);
+    const parsed = parseInt(rawValue, 10);
+    const val = isNaN(parsed) ? 0 : Math.max(minVal, parsed);
+    setPendingQty(id, mode, val);
+    updateQtyPreview(id, mode);
+    if (mode === "entrada" || mode === "saida") {
+        updateConfirmButton(mode);
+    }
+}
+
+function normalizeQtyInput(id, inputEl, mode) {
+    const val = getPendingQty(id, mode);
+    inputEl.value = val;
+    updateQtyPreview(id, mode);
+}
+
 function getQtyControlHTML(id, mode, btnClass) {
+    const currentVal = getPendingQty(id, mode);
+    const minVal = getMinPendingQty(id, mode);
+    const minusBtnClass = mode === "entrada" ? "btn-danger" : btnClass;
     return `
         <div class="qty-control">
-            <button class="btn btn-sm ${btnClass} btn-icon" onclick="changeQty(${id}, -1, '${mode}')" style="width:42px;height:42px;font-size:18px;">−</button>
-            <span id="change-qty-${id}">0</span>
-            <button class="btn btn-sm ${btnClass} btn-icon" onclick="changeQty(${id}, 1, '${mode}')" style="width:42px;height:42px;font-size:18px;">+</button>
+            <button type="button" class="btn btn-sm ${minusBtnClass} btn-icon" onclick="changeQty(${id}, -1, '${mode}')" style="width:42px;height:42px;font-size:18px;" title="Diminuir quantidade">−</button>
+            <input type="number" id="change-qty-${id}" class="qty-input" value="${currentVal}" min="${minVal}" aria-label="Quantidade" oninput="setQtyFromInput(${id}, this.value, '${mode}')" onblur="normalizeQtyInput(${id}, this, '${mode}')">
+            <button type="button" class="btn btn-sm ${btnClass} btn-icon" onclick="changeQty(${id}, 1, '${mode}')" style="width:42px;height:42px;font-size:18px;" title="Aumentar quantidade">+</button>
         </div>
     `;
 }
@@ -341,6 +520,77 @@ function updateConfirmButton(mode) {
 }
 
 // ===== ENTRADA (ADICIONAR ESTOQUE) =====
+function adicionarNovoItemEstoque(nome, quantidade, preco = 0) {
+    const nomeLimpo = String(nome || "").trim();
+    if (!nomeLimpo) {
+        return { ok: false, erro: "Informe o nome do item." };
+    }
+
+    const qtdNum = parseInt(quantidade, 10);
+    const qtdFinal = isNaN(qtdNum) || qtdNum < 0 ? 0 : qtdNum;
+    const precoNum = parseFloat(preco);
+    const precoFinal = isNaN(precoNum) || precoNum < 0 ? 0 : precoNum;
+
+    const products = getProducts();
+    const existente = products.find(p => p.nome.toLowerCase().trim() === nomeLimpo.toLowerCase());
+    if (existente) {
+        return { ok: false, erro: `O item "${existente.nome}" já está cadastrado no estoque.` };
+    }
+
+    const novoId = products.reduce((max, p) => Math.max(max, Number(p.id) || 0), 0) + 1;
+    const novoProduto = {
+        id: novoId,
+        nome: nomeLimpo,
+        quantidade: qtdFinal,
+        preco: precoFinal
+    };
+
+    products.push(novoProduto);
+    saveProducts(products);
+
+    try {
+        const removidos = JSON.parse(localStorage.getItem("produtosRemovidos") || "[]")
+            .filter(r => String(r).toLowerCase().trim() !== nomeLimpo.toLowerCase());
+        localStorage.setItem("produtosRemovidos", JSON.stringify(removidos));
+    } catch (e) {}
+
+    if (qtdFinal > 0) {
+        registrarMovimentacao("entrada", nomeLimpo, qtdFinal, "Cadastro e entrada inicial");
+        registrarLog("entrada", `Cadastrou o item "${nomeLimpo}" com entrada inicial de ${qtdFinal} unidade(s)`);
+    } else {
+        registrarLog("alteracao", `Cadastrou novo item no estoque: "${nomeLimpo}"`);
+    }
+
+    return { ok: true, produto: novoProduto };
+}
+
+function removerItemEstoque(id) {
+    if (getLoggedInType() !== "admin") {
+        return { ok: false, erro: "Apenas o administrador pode remover itens do estoque." };
+    }
+
+    const products = getProducts();
+    const idNum = parseInt(id, 10);
+    const produto = products.find(p => p.id === idNum);
+    if (!produto) {
+        return { ok: false, erro: "Item não encontrado no estoque." };
+    }
+
+    try {
+        const removidos = JSON.parse(localStorage.getItem("produtosRemovidos") || "[]");
+        const nomeLower = produto.nome.toLowerCase().trim();
+        if (!removidos.some(r => String(r).toLowerCase().trim() === nomeLower || r === produto.id)) {
+            removidos.push(produto.nome);
+            localStorage.setItem("produtosRemovidos", JSON.stringify(removidos));
+        }
+    } catch (e) {}
+
+    const atualizados = products.filter(p => p.id !== idNum);
+    saveProducts(atualizados);
+
+    registrarLog("alteracao", `Removeu o item "${produto.nome}" do estoque (saldo anterior: ${produto.quantidade} un.)`);
+    return { ok: true, produto };
+}
 
 // ===== SAÍDA (REMOVER ESTOQUE) =====
 function removeStock(id) {
@@ -359,8 +609,7 @@ function removeStock(id) {
         const qtyEl = document.getElementById(`qty-${id}`);
         if (qtyEl) qtyEl.textContent = updated.quantidade;
         setPendingQty(id, "saida", 0);
-        const changeEl = document.getElementById(`change-qty-${id}`);
-        if (changeEl) changeEl.textContent = '0';
+        setQtyElementDisplay(id, 0);
         updateConfirmButton("saida");
         showToast(`${product.nome}: -${qty} unidades removidas!`);
     } else {
@@ -368,7 +617,7 @@ function removeStock(id) {
     }
 }
 
-// ===== CONFIRMAR ENTRADA (todas as alterações de uma vez) =====
+// ===== CONFIRMAR ENTRADA / EDIÇÃO DE ESTOQUE (aumentar e diminuir) =====
 function confirmEntrada() {
     if (!hasPendingChanges("entrada")) {
         alert("Nenhuma alteração para confirmar.");
@@ -380,22 +629,37 @@ function confirmEntrada() {
     products.forEach(p => {
         const qty = getPendingQty(p.id, "entrada");
         if (qty > 0 && updateProductQuantity(p.id, qty)) {
-            registrarMovimentacao("entrada", p.nome, qty, "Entrada manual");
+            registrarMovimentacao("entrada", p.nome, qty, "Entrada / Edição de estoque");
+            applied.push({ produto: p, qty });
+        } else if (qty < 0 && updateProductQuantity(p.id, qty)) {
+            const qtdReduzida = Math.abs(qty);
+            registrarMovimentacao("saida", p.nome, qtdReduzida, "Redução / Edição de estoque");
             applied.push({ produto: p, qty });
         }
     });
 
-    const totalAdded = applied.reduce((sum, a) => sum + a.qty, 0);
-    if (totalAdded > 0) {
-        // Registrar alterações no histórico de atividades
+    if (applied.length > 0) {
+        let totalAdded = 0;
+        let totalRemoved = 0;
         applied.forEach(a => {
-            registrarLog("entrada", `Entrada de ${a.qty} unidade(s) do produto "${a.produto.nome}" no estoque`);
+            if (a.qty > 0) {
+                totalAdded += a.qty;
+                registrarLog("entrada", `Entrada de ${a.qty} unidade(s) do produto "${a.produto.nome}" no estoque`);
+            } else if (a.qty < 0) {
+                const absQty = Math.abs(a.qty);
+                totalRemoved += absQty;
+                registrarLog("saida", `Redução de ${absQty} unidade(s) do produto "${a.produto.nome}" na edição de estoque`);
+            }
         });
-        showToast(`✅ Entrada confirmada! ${totalAdded} unidades adicionadas ao estoque.`);
+
+        const partes = [];
+        if (totalAdded > 0) partes.push(`+${totalAdded} adicionada(s)`);
+        if (totalRemoved > 0) partes.push(`-${totalRemoved} reduzida(s)`);
+        showToast(`✅ Estoque atualizado! ${partes.join(" e ")}.`);
         resetPendingChanges();
         renderProductList("product-list", "entrada");
     } else {
-        alert("Erro ao confirmar entrada.");
+        alert("Erro ao confirmar alterações no estoque.");
     }
 }
 
@@ -961,10 +1225,151 @@ toast.innerHTML = message;
     }, 2500);
 }
 
+// ===== PERSISTÊNCIA DUPLA (localStorage + IndexedDB) =====
+const CHAVES_PERSISTENTES = [
+    "products",
+    "produtosRemovidos",
+    "movimentacoes",
+    "logs",
+    "orders",
+    "baixasCardapio",
+    "cardapioDiaQuantidades",
+    "cardapioQuantidadesMeta",
+    "cardapioData",
+    "cardapioUltimaAlteracao",
+    "cozinheiras",
+    "cozinheirasRemovidas",
+    "adminUser",
+    "usuarioUser",
+    "ultimoUsuarioLogado"
+];
+
+let _cantinaDbPromise = null;
+let _restaurandoBackup = false;
+
+function abrirCantinaDB() {
+    if (typeof indexedDB === "undefined") return Promise.resolve(null);
+    if (_cantinaDbPromise) return _cantinaDbPromise;
+
+    _cantinaDbPromise = new Promise(resolve => {
+        try {
+            const req = indexedDB.open("cantina_persistencia_db", 1);
+            req.onupgradeneeded = function(e) {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains("dados")) {
+                    db.createObjectStore("dados", { keyPath: "chave" });
+                }
+            };
+            req.onsuccess = function(e) {
+                resolve(e.target.result);
+            };
+            req.onerror = function() {
+                resolve(null);
+            };
+        } catch (e) {
+            resolve(null);
+        }
+    });
+    return _cantinaDbPromise;
+}
+
+function salvarBackupIndexedDB(chave, valor) {
+    if (_restaurandoBackup || !CHAVES_PERSISTENTES.includes(chave)) return;
+    abrirCantinaDB().then(db => {
+        if (!db) return;
+        try {
+            const tx = db.transaction("dados", "readwrite");
+            tx.objectStore("dados").put({ chave: chave, valor: valor, atualizadoEm: Date.now() });
+        } catch (e) {}
+    });
+}
+
+function backupTudoIndexedDB() {
+    abrirCantinaDB().then(db => {
+        if (!db) return;
+        try {
+            const tx = db.transaction("dados", "readwrite");
+            const store = tx.objectStore("dados");
+            CHAVES_PERSISTENTES.forEach(chave => {
+                const val = localStorage.getItem(chave);
+                if (val !== null) {
+                    store.put({ chave: chave, valor: val, atualizadoEm: Date.now() });
+                }
+            });
+        } catch (e) {}
+    });
+}
+
+function restaurarBackupIndexedDB(chavesAusentesAntes) {
+    const ausentesSet = new Set(Array.isArray(chavesAusentesAntes) ? chavesAusentesAntes : []);
+    return abrirCantinaDB().then(db => {
+        if (!db) return false;
+        return new Promise(resolve => {
+            try {
+                const tx = db.transaction("dados", "readonly");
+                const req = tx.objectStore("dados").getAll();
+                req.onsuccess = function() {
+                    const registros = req.result || [];
+                    let restaurouAlgo = false;
+                    _restaurandoBackup = true;
+                    try {
+                        registros.forEach(item => {
+                            if (item && CHAVES_PERSISTENTES.includes(item.chave) && item.valor != null) {
+                                const atual = localStorage.getItem(item.chave);
+                                if (atual === null || ausentesSet.has(item.chave)) {
+                                    localStorage.setItem(item.chave, item.valor);
+                                    restaurouAlgo = true;
+                                }
+                            }
+                        });
+                    } finally {
+                        _restaurandoBackup = false;
+                    }
+                    resolve(restaurouAlgo);
+                };
+                req.onerror = function() { resolve(false); };
+            } catch (e) {
+                resolve(false);
+            }
+        });
+    });
+}
+
+(function instalarInterceptadorPersistencia() {
+    if (typeof window === "undefined" || typeof Storage === "undefined") return;
+    try {
+        const originalSetItem = Storage.prototype.setItem;
+        if (!originalSetItem._cantinaPatched) {
+            Storage.prototype.setItem = function(key, value) {
+                originalSetItem.apply(this, arguments);
+                if (this === window.localStorage) {
+                    salvarBackupIndexedDB(String(key), String(value));
+                }
+            };
+            Storage.prototype.setItem._cantinaPatched = true;
+        }
+    } catch (e) {}
+
+    window.addEventListener("pagehide", backupTudoIndexedDB);
+    window.addEventListener("beforeunload", backupTudoIndexedDB);
+})();
+
 // ===== INIT ON PAGE LOAD =====
 document.addEventListener("DOMContentLoaded", function() {
+    const chavesAusentesAntes = CHAVES_PERSISTENTES.filter(k => localStorage.getItem(k) === null);
     initStorage();
     updateCartBadge();
+    if (navigator.storage && typeof navigator.storage.persist === "function") {
+        navigator.storage.persist().catch(function() {});
+    }
+    restaurarBackupIndexedDB(chavesAusentesAntes).then(restaurou => {
+        if (restaurou) {
+            _executarCallbacksEstoque();
+            if (typeof atualizarNotificacoesSininho === "function") atualizarNotificacoesSininho();
+            if (typeof atualizarBadgesMenu === "function") atualizarBadgesMenu();
+        }
+        backupTudoIndexedDB();
+    });
 });
 
 

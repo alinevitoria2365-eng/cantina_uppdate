@@ -799,7 +799,12 @@
         renderAlteracoes();
     }
 
-    document.addEventListener('DOMContentLoaded', renderDashboard);
+    document.addEventListener('DOMContentLoaded', function() {
+        renderDashboard();
+        if (typeof registrarAtualizacaoEstoque === 'function') {
+            registrarAtualizacaoEstoque(renderDashboard);
+        }
+    });
 </script>
 </body>
 </html>

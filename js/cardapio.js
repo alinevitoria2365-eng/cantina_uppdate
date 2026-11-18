@@ -158,6 +158,10 @@ function saveCardapioData(novoCardapio, motivoLog) {
     }
     atualizarTelasCardapioAbertas();
     atualizarBadgesMenu();
+    atualizarTelasCardapioAbertas();
+    if (typeof notificarAtualizacaoEstoque === "function") {
+        notificarAtualizacaoEstoque();
+    }
 }
 
 // Armazenamento das quantidades que o usuário/admin altera para cada dia
@@ -214,6 +218,10 @@ function registrarLogDebounced(chave, diaNome, ingNome, valor, unidade, padrao) 
             });
         }
         atualizarBadgesMenu();
+    atualizarTelasCardapioAbertas();
+    if (typeof notificarAtualizacaoEstoque === "function") {
+        notificarAtualizacaoEstoque();
+    }
     }, 600);
 }
 
@@ -294,6 +302,10 @@ function redefinirItemDiaPadrao(diaNome, ingNome) {
         });
     }
     atualizarBadgesMenu();
+    atualizarTelasCardapioAbertas();
+    if (typeof notificarAtualizacaoEstoque === "function") {
+        notificarAtualizacaoEstoque();
+    }
 }
 
 /* ---------- Restaurar TODAS as quantidades alteradas aos padrões ---------- */
@@ -321,6 +333,10 @@ function restaurarTodosPadroes() {
     const corpo = document.querySelector(".cardapio-corpo");
     if (corpo) corpo.innerHTML = montarTabelaCardapio();
     atualizarBadgesMenu();
+    atualizarTelasCardapioAbertas();
+    if (typeof notificarAtualizacaoEstoque === "function") {
+        notificarAtualizacaoEstoque();
+    }
     if (typeof showToast === "function") {
         showToast("↺ Cardápio restaurado para as quantidades padrão!");
     }
@@ -353,6 +369,10 @@ function restaurarTodoCardapioOficial() {
     const corpo = document.querySelector(".cardapio-corpo");
     if (corpo) corpo.innerHTML = montarTabelaCardapio();
     atualizarBadgesMenu();
+    atualizarTelasCardapioAbertas();
+    if (typeof notificarAtualizacaoEstoque === "function") {
+        notificarAtualizacaoEstoque();
+    }
     if (typeof showToast === "function") {
         showToast("↺ Cardápio oficial SEDUC-SP restaurado!");
     }
@@ -672,6 +692,10 @@ function atualizarBadgesMenu() {
         badgeUsuario.style.display = "inline-flex";
         badgeUsuario.className = "cv-cardapio-status-badge badge-conectado";
         badgeUsuario.innerHTML = "🟢 Conectado ao Administrador";
+    }
+
+    if (typeof atualizarNotificacoesSininho === "function") {
+        atualizarNotificacoesSininho();
     }
 }
 
@@ -1156,6 +1180,10 @@ function executarBaixaDia(diaNome) {
         });
     }
     atualizarBadgesMenu();
+    atualizarTelasCardapioAbertas();
+    if (typeof notificarAtualizacaoEstoque === "function") {
+        notificarAtualizacaoEstoque();
+    }
 
     if (typeof showToast === "function") {
         showToast(`✅ Baixa do dia ${dia.nome} realizada com sucesso!`);
@@ -1385,6 +1413,7 @@ function fecharCardapio() {
 // Fechar com a tecla ESC
 document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
+        fecharMenuNotificacoes();
         const diaOverlay = document.getElementById("diaItensOverlay");
         if (diaOverlay && diaOverlay.classList.contains("aberto")) {
             fecharItensDia();
@@ -1394,11 +1423,243 @@ document.addEventListener("keydown", function (e) {
     }
 });
 
+// ===== SININHO E MENU DE NOTIFICAÇÕES DO CARDÁPIO =====
+const DIAS_SEMANA_PT = [
+    "domingo",
+    "segunda-feira",
+    "terça-feira",
+    "quarta-feira",
+    "quinta-feira",
+    "sexta-feira",
+    "sábado"
+];
+
+const CARDAPIO_DIAS_SEMANA = [
+    { getDay: 1, cardapioNome: "Segunda", label: "segunda-feira" },
+    { getDay: 2, cardapioNome: "Terça",   label: "terça-feira" },
+    { getDay: 3, cardapioNome: "Quarta",  label: "quarta-feira" },
+    { getDay: 4, cardapioNome: "Quinta",  label: "quinta-feira" },
+    { getDay: 5, cardapioNome: "Sexta",   label: "sexta-feira" }
+];
+
+function isDiaCardapioConcluidoEstaSemana(cardapioNome) {
+    const baixas = typeof getBaixasCardapio === "function" ? getBaixasCardapio() : [];
+    const agora = new Date();
+    const diaSemana = agora.getDay();
+    const diffParaSegunda = diaSemana === 0 ? -6 : 1 - diaSemana;
+    const inicioSemana = new Date(
+        agora.getFullYear(),
+        agora.getMonth(),
+        agora.getDate() + diffParaSegunda,
+        0, 0, 0, 0
+    );
+
+    const nomeNorm = cardapioNome.toLowerCase().trim();
+    return baixas.some(b => {
+        if (!b || b.isPrevia) return false;
+        if (!b.diaNome || b.diaNome.toLowerCase().trim() !== nomeNorm) return false;
+        if (b.dataIso) {
+            const dt = new Date(b.dataIso);
+            if (!isNaN(dt.getTime()) && dt < inicioSemana) return false;
+        }
+        return true;
+    });
+}
+
+function formatarListaDiasPt(dias) {
+    if (dias.length === 0) return "";
+    if (dias.length === 1) return dias[0];
+    if (dias.length === 2) return `${dias[0]} e ${dias[1]}`;
+    return `${dias.slice(0, -1).join(", ")} e ${dias[dias.length - 1]}`;
+}
+
+function gerarNotificacoesCardapio() {
+    const agora = new Date();
+    const hojeIdx = agora.getDay();
+    const nomeHoje = DIAS_SEMANA_PT[hojeIdx];
+    const notificacoes = [];
+
+    // Dias anteriores da semana útil (segunda até ontem, ou segunda a sexta no sábado)
+    const limiteAnterior = hojeIdx === 6 ? 5 : (hojeIdx >= 2 && hojeIdx <= 5 ? hojeIdx - 1 : 0);
+    const naoConcluidos = [];
+
+    CARDAPIO_DIAS_SEMANA.forEach(d => {
+        if (d.getDay <= limiteAnterior && !isDiaCardapioConcluidoEstaSemana(d.cardapioNome)) {
+            naoConcluidos.push(d.label);
+        }
+    });
+
+    if (naoConcluidos.length > 0) {
+        const listaDias = formatarListaDiasPt(naoConcluidos);
+        const verbo = naoConcluidos.length === 1 ? "não foi concluído" : "não foram concluídos";
+        notificacoes.push({
+            tipo: "alerta",
+            icone: "⚠️",
+            texto: `Hoje é <strong>${nomeHoje}</strong> e o cardápio de <strong>${listaDias}</strong> ${verbo}.`,
+            cta: "Abrir Cardápio da Semana",
+            abrirCardapio: true
+        });
+    }
+
+    // Status do cardápio de hoje (segunda a sexta)
+    const diaHojeInfo = CARDAPIO_DIAS_SEMANA.find(d => d.getDay === hojeIdx);
+    if (diaHojeInfo) {
+        const hojeConcluido = isDiaCardapioConcluidoEstaSemana(diaHojeInfo.cardapioNome);
+        if (!hojeConcluido) {
+            notificacoes.push({
+                tipo: "aviso",
+                icone: "🕒",
+                texto: `O cardápio de hoje (<strong>${nomeHoje}</strong>) ainda está pendente de conclusão.`,
+                cta: "Concluir cardápio de hoje",
+                abrirCardapio: true
+            });
+        } else {
+            notificacoes.push({
+                tipo: "sucesso",
+                icone: "✅",
+                texto: `O cardápio de hoje (<strong>${nomeHoje}</strong>) já foi concluído.`,
+                abrirCardapio: false
+            });
+        }
+    }
+
+    if (naoConcluidos.length === 0 && !diaHojeInfo) {
+        notificacoes.push({
+            tipo: "sucesso",
+            icone: "✅",
+            texto: `Hoje é <strong>${nomeHoje}</strong>. Nenhum cardápio pendente no momento.`,
+            abrirCardapio: false
+        });
+    }
+
+    // Notificações de estoque baixo / esgotado (abaixo de 10 unidades)
+    const produtos = typeof getProducts === "function" ? getProducts() : [];
+    const esgotados = produtos.filter(p => (Number(p.quantidade) || 0) <= 0);
+    const estoqueBaixo = produtos.filter(p => {
+        const q = Number(p.quantidade) || 0;
+        return q > 0 && q < 10;
+    });
+
+    if (esgotados.length > 0) {
+        const amostraEsgotados = esgotados.slice(0, 4).map(p => p.nome).join(", ");
+        const restanteEsg = esgotados.length > 4 ? ` e mais ${esgotados.length - 4}` : "";
+        notificacoes.push({
+            tipo: "alerta",
+            icone: "🚨",
+            texto: `<strong>Estoque esgotado:</strong> ${amostraEsgotados}${restanteEsg} (${esgotados.length} ${esgotados.length === 1 ? "item zerado" : "itens zerados"}).`,
+            cta: "Ver Estoque",
+            acaoHref: "estoque.html"
+        });
+    }
+
+    if (estoqueBaixo.length > 0) {
+        const amostraBaixos = estoqueBaixo.slice(0, 4).map(p => `${p.nome} (${p.quantidade} un.)`).join(", ");
+        const restanteBaixo = estoqueBaixo.length > 4 ? ` e mais ${estoqueBaixo.length - 4}` : "";
+        notificacoes.push({
+            tipo: "aviso",
+            icone: "📦",
+            texto: `<strong>Estoque pouco:</strong> ${amostraBaixos}${restanteBaixo} com menos de 10 unidades.`,
+            cta: "Ver Estoque",
+            acaoHref: "estoque.html"
+        });
+    }
+
+    return notificacoes;
+}
+
+function inicializarSininhoNotificacoes() {
+    const card = document.querySelector(".cv-menu-card");
+    if (!card || document.getElementById("cvNotifWrapper")) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.id = "cvNotifWrapper";
+    wrapper.className = "cv-notif-wrapper";
+    wrapper.innerHTML = `
+        <button type="button" id="cvNotifBtn" class="cv-notif-btn" aria-label="Notificações" title="Notificações" onclick="toggleMenuNotificacoes(event)">
+            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span id="cvNotifBadge" class="cv-notif-badge" style="display:none;">0</span>
+        </button>
+        <div id="cvNotifDropdown" class="cv-notif-dropdown" role="menu" aria-label="Menu de notificações">
+            <div class="cv-notif-header">
+                <span>🔔 Notificações</span>
+                <button type="button" class="cv-notif-close" aria-label="Fechar notificações" onclick="fecharMenuNotificacoes()">✕</button>
+            </div>
+            <div id="cvNotifList" class="cv-notif-list"></div>
+        </div>
+    `;
+    card.appendChild(wrapper);
+
+    document.addEventListener("click", function (e) {
+        const w = document.getElementById("cvNotifWrapper");
+        if (w && !w.contains(e.target)) {
+            fecharMenuNotificacoes();
+        }
+    });
+
+    atualizarNotificacoesSininho();
+}
+
+function atualizarNotificacoesSininho() {
+    const listEl = document.getElementById("cvNotifList");
+    const badgeEl = document.getElementById("cvNotifBadge");
+    if (!listEl || !badgeEl) return;
+
+    const notificacoes = gerarNotificacoesCardapio();
+    const pendentesCount = notificacoes.filter(n => n.tipo === "alerta" || n.tipo === "aviso").length;
+
+    if (pendentesCount > 0) {
+        badgeEl.textContent = pendentesCount;
+        badgeEl.style.display = "inline-block";
+    } else {
+        badgeEl.style.display = "none";
+    }
+
+    listEl.innerHTML = notificacoes.map(n => {
+        const onClickAttr = n.abrirCardapio
+            ? 'onclick="fecharMenuNotificacoes(); abrirCardapio();"'
+            : n.acaoHref
+                ? `onclick="fecharMenuNotificacoes(); window.location.href='${n.acaoHref}';"`
+                : '';
+        return `
+        <div class="cv-notif-item ${n.tipo}" ${onClickAttr}>
+            <span class="cv-notif-item-icon">${n.icone}</span>
+            <div class="cv-notif-item-text">
+                <div>${n.texto}</div>
+                ${n.cta ? `<span class="cv-notif-item-cta">${n.cta} →</span>` : ""}
+            </div>
+        </div>
+    `;
+    }).join("");
+}
+
+function toggleMenuNotificacoes(event) {
+    if (event) event.stopPropagation();
+    const dropdown = document.getElementById("cvNotifDropdown");
+    if (!dropdown) return;
+    atualizarNotificacoesSininho();
+    dropdown.classList.toggle("aberto");
+}
+
+function fecharMenuNotificacoes() {
+    const dropdown = document.getElementById("cvNotifDropdown");
+    if (dropdown) dropdown.classList.remove("aberto");
+}
+
 // Inicialização e atualização de status dos menus
 document.addEventListener("DOMContentLoaded", function () {
     carregarQuantidadesStorage();
     CARDAPIO = getCardapioData();
+    inicializarSininhoNotificacoes();
     atualizarBadgesMenu();
+    if (typeof registrarAtualizacaoEstoque === "function") {
+        registrarAtualizacaoEstoque(function () {
+            atualizarNotificacoesSininho();
+            atualizarTelasCardapioAbertas();
+        });
+    }
 });
 
 // Sincronização entre abas/janelas em tempo real
@@ -1408,12 +1669,15 @@ window.addEventListener("storage", function (e) {
         e.key === "cardapioQuantidadesMeta" ||
         e.key === "cardapioData" ||
         e.key === "baixasCardapio" ||
-        e.key === "cardapioUltimaAlteracao"
+        e.key === "cardapioUltimaAlteracao" ||
+        e.key === "products" ||
+        e.key === "produtosRemovidos"
     ) {
         carregarQuantidadesStorage();
         CARDAPIO = getCardapioData();
         atualizarTelasCardapioAbertas();
         atualizarBadgesMenu();
+        atualizarNotificacoesSininho();
     }
 });
 

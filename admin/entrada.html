@@ -3,10 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Entrada de Estoque</title>
+    <title>Admin - Entrada / Editar Estoque</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/main.css">
+    <style>
+        .add-item-box {
+            margin: 12px 0 14px;
+        }
+        .btn-toggle-add {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: #eef4ff;
+            border: 1.5px dashed #1a4fbf;
+            border-radius: 12px;
+            color: #12305c;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-toggle-add:hover {
+            background: #dbe8ff;
+        }
+        .add-item-form {
+            display: none;
+            margin-top: 10px;
+            padding: 14px;
+            background: #f8fafc;
+            border: 1px solid #dbe1ea;
+            border-radius: 12px;
+        }
+        .add-item-form.open {
+            display: block;
+        }
+        .add-item-field {
+            margin-bottom: 10px;
+        }
+        .add-item-field label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #12305c;
+            margin-bottom: 4px;
+        }
+        .add-item-field input[type="text"],
+        .add-item-field input[type="number"].text-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 9px 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1e293b;
+            background: #fff;
+            outline: none;
+        }
+        .add-item-field input[type="text"]:focus,
+        .add-item-field input[type="number"].text-input:focus {
+            border-color: #1a4fbf;
+            box-shadow: 0 0 0 2px rgba(26, 79, 191, 0.12);
+        }
+        .add-item-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .novo-item-qty-control {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #fff;
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .add-item-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .add-item-actions .btn {
+            flex: 1;
+            padding: 9px 12px;
+            font-size: 13px;
+        }
+    </style>
 </head>
 <body class="cv-page-body">
     <div class="container cv-card with-fixed-bottom">
@@ -18,9 +105,44 @@
             <span class="cv-logo-underline"></span>
         </div>
 
-        <h2 class="cv-page-title">Entrada de Estoque</h2>
+        <h2 class="cv-page-title">Entrada / Editar Estoque</h2>
         <div class="cv-divider"><span></span><i></i><span></span></div>
-        <p class="cv-page-subtitle">Ajuste as quantidades com (−) e (+) e confirme ao final</p>
+        <p class="cv-page-subtitle">Diminua (−), aumente (+), digite a quantidade ou adicione novos itens</p>
+
+        <div class="add-item-box">
+            <button type="button" class="btn-toggle-add" id="btn-toggle-add-item" onclick="toggleAddItemForm()">
+                <span>➕</span>
+                <span>Adicionar Novo Item</span>
+            </button>
+
+            <div class="add-item-form" id="add-item-form">
+                <div class="add-item-field">
+                    <label for="novo-item-nome">Nome do Item</label>
+                    <input type="text" id="novo-item-nome" placeholder="Ex: Macarrão Parafuso, Sal, Azeite..." maxlength="60">
+                </div>
+
+                <div class="add-item-row">
+                    <div class="add-item-field" style="margin-bottom:0;">
+                        <label for="novo-item-qtd">Quantidade Inicial</label>
+                        <div class="novo-item-qty-control">
+                            <button type="button" class="btn btn-sm btn-primary btn-icon" onclick="alterarQtdNovoItem(-1)" style="width:40px;height:40px;font-size:18px;" title="Diminuir quantidade">−</button>
+                            <input type="number" id="novo-item-qtd" class="qty-input" value="0" min="0" inputmode="numeric" onblur="normalizarQtdNovoItem()">
+                            <button type="button" class="btn btn-sm btn-primary btn-icon" onclick="alterarQtdNovoItem(1)" style="width:40px;height:40px;font-size:18px;" title="Aumentar quantidade">+</button>
+                        </div>
+                    </div>
+
+                    <div class="add-item-field" style="flex:1;min-width:110px;margin-bottom:0;">
+                        <label for="novo-item-preco">Preço Unit. (R$)</label>
+                        <input type="number" id="novo-item-preco" class="text-input" placeholder="0.00" min="0" step="0.01">
+                    </div>
+                </div>
+
+                <div class="add-item-actions">
+                    <button type="button" class="btn btn-success" onclick="salvarNovoItem()">✅ Salvar Item</button>
+                    <button type="button" class="btn btn-outline" onclick="toggleAddItemForm(false)">Cancelar</button>
+                </div>
+            </div>
+        </div>
 
         <div class="scrollable-list" id="product-list"></div>
 
@@ -55,7 +177,7 @@
                         <svg viewBox="0 0 24 24" width="22" height="20" fill="none" stroke="#12305c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6.5"/></svg>
                     </span>
                     <span class="cv-back-divider"></span>
-                    <span class="cv-back-text">Confirmar Entrada</span>
+                    <span class="cv-back-text">Confirmar Alterações</span>
                 </button>
     </div>
 
@@ -68,6 +190,59 @@
             }
             renderProductList("product-list", "entrada");
         });
+
+        function toggleAddItemForm(forceOpen) {
+            const form = document.getElementById("add-item-form");
+            if (!form) return;
+            const abrir = typeof forceOpen === "boolean" ? forceOpen : !form.classList.contains("open");
+            form.classList.toggle("open", abrir);
+            if (abrir) {
+                const nomeInput = document.getElementById("novo-item-nome");
+                if (nomeInput) nomeInput.focus();
+            }
+        }
+
+        function normalizarQtdNovoItem() {
+            const input = document.getElementById("novo-item-qtd");
+            if (!input) return 0;
+            const val = parseInt(input.value, 10);
+            const finalVal = isNaN(val) || val < 0 ? 0 : val;
+            input.value = finalVal;
+            return finalVal;
+        }
+
+        function alterarQtdNovoItem(delta) {
+            const input = document.getElementById("novo-item-qtd");
+            if (!input) return;
+            const atual = normalizarQtdNovoItem();
+            const novo = Math.max(0, atual + delta);
+            input.value = novo;
+        }
+
+        function salvarNovoItem() {
+            const nomeInput = document.getElementById("novo-item-nome");
+            const precoInput = document.getElementById("novo-item-preco");
+            const qtdInput = document.getElementById("novo-item-qtd");
+
+            const nome = nomeInput ? nomeInput.value : "";
+            const qtd = normalizarQtdNovoItem();
+            const preco = precoInput && precoInput.value !== "" ? precoInput.value : 0;
+
+            const resultado = adicionarNovoItemEstoque(nome, qtd, preco);
+            if (!resultado.ok) {
+                alert(resultado.erro);
+                if (nomeInput) nomeInput.focus();
+                return;
+            }
+
+            if (nomeInput) nomeInput.value = "";
+            if (qtdInput) qtdInput.value = "0";
+            if (precoInput) precoInput.value = "";
+            toggleAddItemForm(false);
+
+            renderProductList("product-list", "entrada");
+            showToast(`✅ Item "${resultado.produto.nome}" adicionado (${resultado.produto.quantidade} un.)!`);
+        }
     </script>
 </body>
 </html>

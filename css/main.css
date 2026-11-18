@@ -908,6 +908,36 @@ select.cv-select-usuario option {
     color: #2d3748;
 }
 
+.product-actions .qty-control .qty-input,
+.novo-item-qty-control .qty-input {
+    width: 52px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 15px;
+    color: #12305c;
+    background: #f8fafc;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    padding: 6px 4px;
+    outline: none;
+    -moz-appearance: textfield;
+}
+
+.product-actions .qty-control .qty-input:focus,
+.novo-item-qty-control .qty-input:focus {
+    border-color: #1a4fbf;
+    background: #ffffff;
+    box-shadow: 0 0 0 2px rgba(26, 79, 191, 0.15);
+}
+
+.product-actions .qty-control .qty-input::-webkit-outer-spin-button,
+.product-actions .qty-control .qty-input::-webkit-inner-spin-button,
+.novo-item-qty-control .qty-input::-webkit-outer-spin-button,
+.novo-item-qty-control .qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
 /* ===== MENU BUTTONS ===== */
 .menu-grid {
     display: flex;

@@ -7,6 +7,26 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/main.css">
+    <style>
+        .btn-remove-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 7px 11px;
+            border-radius: 8px;
+            border: 1px solid #fed7d7;
+            background: #fff5f5;
+            color: #c53030;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-remove-item:hover {
+            background: #fed7d7;
+        }
+    </style>
 </head>
 <body class="cv-page-body">
     <div class="container cv-card">
@@ -56,7 +76,20 @@
                 window.location.href = "login.html";
                 return;
             }
+            renderizarEstoque();
+            registrarAtualizacaoEstoque(renderizarEstoque);
+        });
 
+        function escapeHtml(texto) {
+            return String(texto == null ? "" : texto)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function renderizarEstoque() {
             const products = getProducts();
             const container = document.getElementById("product-list");
 
@@ -67,20 +100,41 @@
 
             let html = '<ul class="product-list">';
             products.forEach(p => {
-                const valorTotal = p.quantidade * p.preco;
+                const preco = Number(p.preco) || 0;
+                const valorTotal = p.quantidade * preco;
                 html += `
                     <li class="product-item">
                         <div class="product-info">
-                            <span class="product-name">${p.nome}</span>
-                            <span class="product-qty">Quantidade: <strong>${p.quantidade}</strong> | Preço Unit.: R$ ${p.preco.toFixed(2)}</span>
+                            <span class="product-name">${escapeHtml(p.nome)}</span>
+                            <span class="product-qty">Quantidade: <strong>${p.quantidade}</strong> | Preço Unit.: R$ ${preco.toFixed(2)}</span>
                             <span style="font-size:12px;color:#718096;">Valor em estoque: <strong>R$ ${valorTotal.toFixed(2)}</strong></span>
                         </div>
-                        <div style="font-size:24px;">📦</div>
+                        <button type="button" class="btn-remove-item" onclick="confirmarRemocaoItem(${p.id})" title="Remover item do estoque">
+                            🗑️ Remover
+                        </button>
                     </li>`;
             });
             html += '</ul>';
             container.innerHTML = html;
-        });
+        }
+
+        function confirmarRemocaoItem(id) {
+            const produto = getProductById(id);
+            if (!produto) return;
+
+            if (!confirm(`Deseja remover "${produto.nome}" do estoque? Esta ação não pode ser desfeita.`)) {
+                return;
+            }
+
+            const resultado = removerItemEstoque(id);
+            if (!resultado.ok) {
+                alert(resultado.erro);
+                return;
+            }
+
+            renderizarEstoque();
+            showToast(`🗑️ Item "${resultado.produto.nome}" removido do estoque.`);
+        }
     </script>
 </body>
 </html>

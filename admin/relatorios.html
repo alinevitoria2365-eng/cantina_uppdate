@@ -289,11 +289,7 @@
 
     <script src="../js/app.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            if (getLoggedInType() !== "admin") {
-                window.location.href = "login.html";
-                return;
-            }
+        function atualizarRelatorios() {
             carregarResumoGeral();
             loadReportEstoqueAtual();
             loadReportEstoqueBaixo();
@@ -301,6 +297,17 @@
             loadReportSaidas();
             loadReportPedidos();
             loadReportMaisMovimentados();
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            if (getLoggedInType() !== "admin") {
+                window.location.href = "login.html";
+                return;
+            }
+            atualizarRelatorios();
+            if (typeof registrarAtualizacaoEstoque === "function") {
+                registrarAtualizacaoEstoque(atualizarRelatorios);
+            }
         });
 
         function toggleReport(reportId) {

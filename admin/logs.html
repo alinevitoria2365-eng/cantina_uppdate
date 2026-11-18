@@ -10,7 +10,7 @@
     <style>
         .report-table {
             width: 100%;
-            min-width: 520px;
+            min-width: 640px;
             border-collapse: collapse;
             font-size: 13px;
             table-layout: fixed;
@@ -35,11 +35,14 @@
             overflow-wrap: anywhere;
         }
         /* Larguras das colunas para caberem dentro do card */
-        .report-table th:nth-child(1) { width: 17%; }
-        .report-table th:nth-child(2) { width: 15%; }
-        .report-table th:nth-child(3) { width: 16%; }
-        .report-table th:nth-child(4) { width: 15%; }
-        .report-table th:nth-child(5) { width: 37%; }
+        .report-table th:nth-child(1) { width: 7%; text-align: center; }
+        .report-table td:nth-child(1) { text-align: center; color: #718096; font-weight: 600; }
+        .report-table th:nth-child(2) { width: 13%; }
+        .report-table th:nth-child(3) { width: 12%; }
+        .report-table th:nth-child(4) { width: 16%; }
+        .report-table th:nth-child(5) { width: 12%; }
+        .report-table th:nth-child(6) { width: 14%; }
+        .report-table th:nth-child(7) { width: 26%; }
         /* Wrapper com rolagem horizontal caso a tela seja muito estreita */
         .table-wrap {
             overflow-x: auto;
@@ -128,40 +131,92 @@
             color: #6b46c1;
             border: 1px solid #e9d8fd;
         }
+        .actions-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
         .btn-print {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 8px 16px;
+            padding: 8px 14px;
             background: #eef1f6;
             border: 1px solid #dbe1ea;
             border-radius: 8px;
             color: #12305c;
-            font-size: 14px;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
-            margin-top: 12px;
         }
         .btn-print:hover {
             background: #e2e8f0;
+        }
+        .btn-print-acessos {
+            background: #e6f0ff;
+            border-color: #b8d0f5;
+            color: #1a4fbf;
+        }
+        .btn-print-acessos:hover {
+            background: #d3e4ff;
+        }
+        .btn-export {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: #f0fff4;
+            border: 1px solid #c6f6d5;
+            border-radius: 8px;
+            color: #276749;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-export:hover {
+            background: #dcfce7;
         }
         .btn-clear {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 8px 16px;
+            padding: 8px 14px;
             background: #fff5f5;
             border: 1px solid #fed7d7;
             border-radius: 8px;
             color: #c53030;
-            font-size: 14px;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
-            margin-top: 12px;
-            margin-left: 8px;
         }
         .btn-clear:hover {
             background: #fed7d7;
+        }
+        .perfil-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .perfil-gestao {
+            background: #edf2ff;
+            color: #1e40af;
+            border: 1px solid #c7d2fe;
+        }
+        .perfil-cozinha {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+        .print-sheet-header,
+        .print-sheet-footer {
+            display: none;
         }
         .no-data {
             text-align: center;
@@ -194,9 +249,133 @@
             border-color: #12305c;
         }
         @media print {
+            @page {
+                size: A4;
+                margin: 12mm;
+            }
+            body.cv-page-body {
+                background: #fff !important;
+                padding: 0 !important;
+            }
             body::before, body::after { display: none !important; }
-            .container { zoom: 1 !important; box-shadow: none !important; }
-            .cv-header, .cv-back-bar, .cv-footer, .cv-footer-text, .filtro-bar, .btn-print, .btn-clear { display: none !important; }
+            body.cv-page-body .container.cv-card {
+                max-width: 100% !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                zoom: 1 !important;
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                background: #fff !important;
+            }
+            .cv-header, .cv-page-title, .cv-divider, .cv-page-subtitle,
+            #resumo-logs, .cv-back-bar, .cv-footer, .cv-footer-text,
+            .filtro-bar, .actions-bar, .btn-print, .btn-export, .btn-clear {
+                display: none !important;
+            }
+            .print-sheet-header {
+                display: block !important;
+                margin-bottom: 12px;
+                padding-bottom: 10px;
+                border-bottom: 2px solid #12305c;
+            }
+            .print-sheet-title {
+                font-size: 16px;
+                font-weight: 700;
+                color: #12305c;
+                margin: 0 0 4px 0;
+                text-transform: uppercase;
+                letter-spacing: 0.4px;
+            }
+            .print-sheet-subtitle {
+                font-size: 12px;
+                color: #334155;
+                margin: 0 0 8px 0;
+            }
+            .print-sheet-meta {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 11px;
+                margin-top: 6px;
+            }
+            .print-sheet-meta td {
+                border: 1px solid #94a3b8;
+                padding: 4px 8px;
+                background: #f8fafc !important;
+                color: #1e293b !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .table-wrap {
+                overflow: visible !important;
+            }
+            .report-table {
+                width: 100% !important;
+                min-width: 0 !important;
+                table-layout: auto !important;
+                border-collapse: collapse !important;
+                font-size: 11px !important;
+            }
+            .report-table th,
+            .report-table td {
+                border: 1px solid #94a3b8 !important;
+                padding: 6px 8px !important;
+                color: #111827 !important;
+                vertical-align: middle !important;
+            }
+            .report-table th {
+                background: #e2e8f0 !important;
+                color: #0f172a !important;
+                font-weight: 700 !important;
+                font-size: 10px !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .report-table tbody tr {
+                background: transparent !important;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .report-table tbody tr:nth-child(even) td {
+                background: #f8fafc !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .report-table thead {
+                display: table-header-group;
+            }
+            .acao-badge,
+            .perfil-badge {
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+                color: #111827 !important;
+                font-weight: 600 !important;
+                font-size: 11px !important;
+            }
+            .print-sheet-footer {
+                display: block !important;
+                margin-top: 18px;
+                padding-top: 10px;
+                border-top: 1px solid #cbd5e1;
+                font-size: 11px;
+                color: #334155;
+            }
+            .print-signature-row {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 22px;
+                gap: 24px;
+            }
+            .print-signature-line {
+                flex: 1;
+                border-top: 1px solid #475569;
+                padding-top: 4px;
+                text-align: center;
+                font-size: 10px;
+                color: #475569;
+            }
         }
     </style>
 </head>
@@ -224,11 +403,21 @@
             <button class="filtro-btn" data-filtro="alteracoes" onclick="aplicarFiltro('alteracoes')">✏️ Alterações</button>
         </div>
 
+        <!-- CABEÇALHO DA PLANILHA (APENAS IMPRESSÃO) -->
+        <div id="print-sheet-header" class="print-sheet-header"></div>
+
         <!-- LISTA DE LOGS -->
         <div id="logs-lista"></div>
 
-        <button class="btn-print" onclick="window.print()">🖨️ Imprimir Histórico</button>
-        <button class="btn-clear" onclick="limparHistorico()">🗑️ Limpar Histórico</button>
+        <!-- RODAPÉ DA PLANILHA (APENAS IMPRESSÃO) -->
+        <div id="print-sheet-footer" class="print-sheet-footer"></div>
+
+        <div class="actions-bar">
+            <button type="button" class="btn-print" onclick="imprimirHistoricoAtual()">🖨️ Imprimir Planilha</button>
+            <button type="button" class="btn-print btn-print-acessos" onclick="imprimirPlanilhaAcessos()">📋 Imprimir Quem Entrou</button>
+            <button type="button" class="btn-export" onclick="exportarPlanilhaCSV()">📊 Baixar Planilha (Excel)</button>
+            <button type="button" class="btn-clear" onclick="limparHistorico()">🗑️ Limpar Histórico</button>
+        </div>
 
         <div class="footer-bar cv-back-bar">
             <button type="button" class="btn btn-outline cv-back-btn" onclick="window.location.href='menu.html'">
@@ -265,19 +454,52 @@
                 return;
             }
             renderizarLogs();
+            window.addEventListener("beforeprint", atualizarCabecalhoImpressao);
         });
 
-        function getAcaoBadge(acao) {
+        function escapeHtml(texto) {
+            return String(texto == null ? "" : texto)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function getListaAdminsSegura() {
+            return typeof getListaAdmins === "function" ? getListaAdmins() : ["Rita", "Maria", "Roberta"];
+        }
+
+        function isUsuarioGestao(usuario, listaAdmins) {
+            return usuario === "Administrador" || listaAdmins.includes(usuario);
+        }
+
+        function getPerfilUsuario(usuario, listaAdmins) {
+            return isUsuarioGestao(usuario, listaAdmins) ? "Gestão" : "Cozinha";
+        }
+
+        function getPerfilBadge(usuario, listaAdmins) {
+            const gestao = isUsuarioGestao(usuario, listaAdmins);
+            const classe = gestao ? "perfil-gestao" : "perfil-cozinha";
+            const label = gestao ? "Gestão" : "Cozinha";
+            return `<span class="perfil-badge ${classe}">${label}</span>`;
+        }
+
+        function getAcaoInfo(acao) {
             const map = {
-                login:      { classe: "acao-login",      label: "🚪 Acesso" },
-                entrada:    { classe: "acao-entrada",    label: "📥 Entrada" },
-                saida:      { classe: "acao-saida",      label: "📤 Saída" },
-                pedido:     { classe: "acao-pedido",     label: "🛒 Pedido" },
-                aprovado:   { classe: "acao-aprovado",   label: "✅ Aprovado" },
-                rejeitado:  { classe: "acao-rejeitado",  label: "❌ Rejeitado" },
-                alteracao:  { classe: "acao-alteracao",  label: "✏️ Alteração" }
+                login:      { classe: "acao-login",      label: "🚪 Acesso",    texto: "Acesso" },
+                entrada:    { classe: "acao-entrada",    label: "📥 Entrada",   texto: "Entrada" },
+                saida:      { classe: "acao-saida",      label: "📤 Saída",     texto: "Saída" },
+                pedido:     { classe: "acao-pedido",     label: "🛒 Pedido",    texto: "Pedido" },
+                aprovado:   { classe: "acao-aprovado",   label: "✅ Aprovado",  texto: "Aprovado" },
+                rejeitado:  { classe: "acao-rejeitado",  label: "❌ Rejeitado", texto: "Rejeitado" },
+                alteracao:  { classe: "acao-alteracao",  label: "✏️ Alteração", texto: "Alteração" }
             };
-            const info = map[acao] || { classe: "acao-alteracao", label: acao };
+            return map[acao] || { classe: "acao-alteracao", label: acao, texto: acao };
+        }
+
+        function getAcaoBadge(acao) {
+            const info = getAcaoInfo(acao);
             return `<span class="acao-badge ${info.classe}">${info.label}</span>`;
         }
 
@@ -292,6 +514,63 @@
             return logs;
         }
 
+        function atualizarCabecalhoImpressao() {
+            const headerEl = document.getElementById("print-sheet-header");
+            const footerEl = document.getElementById("print-sheet-footer");
+            if (!headerEl || !footerEl) return;
+
+            const filtrados = filtrarLogs();
+            const listaAdmins = getListaAdminsSegura();
+            const agora = new Date();
+            const dataEmissao = agora.toLocaleDateString("pt-BR");
+            const horaEmissao = agora.toLocaleTimeString("pt-BR");
+            const adminAtual = typeof getLoggedInName === "function" ? getLoggedInName() : "Administrador";
+
+            const titulos = {
+                login: "Planilha de Registro de Acessos (Quem Entrou)",
+                alteracoes: "Planilha de Alterações no Sistema",
+                todos: "Planilha de Histórico de Atividades"
+            };
+            const subtitulos = {
+                login: "Controle detalhado de entradas no sistema — Cantina Coronel Venâncio",
+                alteracoes: "Registro de movimentações e alterações — Cantina Coronel Venâncio",
+                todos: "Registro completo de acessos e alterações — Cantina Coronel Venâncio"
+            };
+
+            const totalAcessos = filtrados.filter(l => l.acao === "login").length;
+            const acessosGestao = filtrados.filter(l => l.acao === "login" && isUsuarioGestao(l.usuario, listaAdmins)).length;
+            const acessosCozinha = totalAcessos - acessosGestao;
+            const usuariosUnicos = new Set(filtrados.map(l => l.usuario)).size;
+
+            let resumoExtra = `<strong>Usuários distintos:</strong> ${usuariosUnicos}`;
+            if (filtroAtual === "login" || filtroAtual === "todos") {
+                resumoExtra += ` &nbsp;|&nbsp; <strong>Cozinha:</strong> ${acessosCozinha} &nbsp;|&nbsp; <strong>Gestão:</strong> ${acessosGestao}`;
+            }
+
+            headerEl.innerHTML = `
+                <h2 class="print-sheet-title">${titulos[filtroAtual] || titulos.todos}</h2>
+                <p class="print-sheet-subtitle">${subtitulos[filtroAtual] || subtitulos.todos}</p>
+                <table class="print-sheet-meta">
+                    <tr>
+                        <td><strong>Emitido em:</strong> ${dataEmissao} às ${horaEmissao}</td>
+                        <td><strong>Emitido por:</strong> ${escapeHtml(adminAtual)}</td>
+                        <td><strong>Total de registros:</strong> ${filtrados.length}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3">${resumoExtra}</td>
+                    </tr>
+                </table>
+            `;
+
+            footerEl.innerHTML = `
+                <div>Documento gerado automaticamente pelo Sistema da Cantina Coronel Venâncio em ${dataEmissao} às ${horaEmissao}.</div>
+                <div class="print-signature-row">
+                    <div class="print-signature-line">Responsável pela Emissão (${escapeHtml(adminAtual)})</div>
+                    <div class="print-signature-line">Conferência / Gestão</div>
+                </div>
+            `;
+        }
+
         function renderizarLogs() {
             const logs = getLogs();
             const filtrados = filtrarLogs().slice().reverse(); // mais recentes primeiro
@@ -299,11 +578,11 @@
             const resumo = document.getElementById("resumo-logs");
 
             // Resumo
-            const listaAdmins = typeof getListaAdmins === "function" ? getListaAdmins() : ["Rita", "Maria", "Roberta"];
+            const listaAdmins = getListaAdminsSegura();
             const totalAcessos = logs.filter(l => l.acao === "login").length;
             const totalAlteracoes = logs.filter(l => l.acao !== "login").length;
-            const acessosAdmin = logs.filter(l => l.acao === "login" && (l.usuario === "Administrador" || listaAdmins.includes(l.usuario))).length;
-            const acessosUsuario = logs.filter(l => l.acao === "login" && l.usuario !== "Administrador" && !listaAdmins.includes(l.usuario)).length;
+            const acessosAdmin = logs.filter(l => l.acao === "login" && isUsuarioGestao(l.usuario, listaAdmins)).length;
+            const acessosUsuario = logs.filter(l => l.acao === "login" && !isUsuarioGestao(l.usuario, listaAdmins)).length;
 
             resumo.innerHTML = `
                 <div class="stats-grid">
@@ -321,6 +600,8 @@
                 </div>
             `;
 
+            atualizarCabecalhoImpressao();
+
             if (filtrados.length === 0) {
                 container.innerHTML = `
                     <div class="no-data">
@@ -337,9 +618,11 @@
                 <table class="report-table">
                     <thead>
                         <tr>
+                            <th>Nº</th>
                             <th>Data</th>
                             <th>Hora</th>
                             <th>Usuário</th>
+                            <th>Perfil</th>
                             <th>Atividade</th>
                             <th>Detalhes</th>
                         </tr>
@@ -347,15 +630,17 @@
                     <tbody>
             `;
 
-            filtrados.forEach(log => {
+            filtrados.forEach((log, idx) => {
                 const destaque = log.acao === "login" ? 'style="background:#f7faff;"' : "";
                 html += `
                     <tr ${destaque}>
-                        <td>${log.data}</td>
-                        <td>${log.hora}</td>
-                        <td><strong>${log.usuario}</strong></td>
+                        <td>${idx + 1}</td>
+                        <td>${escapeHtml(log.data)}</td>
+                        <td>${escapeHtml(log.hora)}</td>
+                        <td><strong>${escapeHtml(log.usuario)}</strong></td>
+                        <td>${getPerfilBadge(log.usuario, listaAdmins)}</td>
                         <td>${getAcaoBadge(log.acao)}</td>
-                        <td>${log.detalhes}</td>
+                        <td>${escapeHtml(log.detalhes)}</td>
                     </tr>
                 `;
             });
@@ -375,6 +660,79 @@
                 btn.classList.toggle("active", btn.dataset.filtro === filtro);
             });
             renderizarLogs();
+        }
+
+        function imprimirHistoricoAtual() {
+            const filtrados = filtrarLogs();
+            if (filtrados.length === 0) {
+                showToast("⚠️ Não há registros para imprimir neste filtro.");
+                return;
+            }
+            atualizarCabecalhoImpressao();
+            window.print();
+        }
+
+        function imprimirPlanilhaAcessos() {
+            aplicarFiltro("login");
+            const acessos = filtrarLogs();
+            if (acessos.length === 0) {
+                showToast("⚠️ Nenhum registro de acesso encontrado para imprimir.");
+                return;
+            }
+            atualizarCabecalhoImpressao();
+            window.print();
+        }
+
+        function escaparCelulaCSV(valor) {
+            const texto = String(valor == null ? "" : valor).replace(/"/g, '""');
+            return `"${texto}"`;
+        }
+
+        function exportarPlanilhaCSV() {
+            const filtrados = filtrarLogs().slice().reverse();
+            if (filtrados.length === 0) {
+                showToast("⚠️ Não há registros para exportar.");
+                return;
+            }
+
+            const listaAdmins = getListaAdminsSegura();
+            const linhas = [
+                ["Nº", "Data", "Hora", "Usuário", "Perfil", "Atividade", "Detalhes"].map(escaparCelulaCSV).join(";")
+            ];
+
+            filtrados.forEach((log, idx) => {
+                const perfil = getPerfilUsuario(log.usuario, listaAdmins);
+                const atividade = getAcaoInfo(log.acao).texto;
+                linhas.push([
+                    idx + 1,
+                    log.data || "",
+                    log.hora || "",
+                    log.usuario || "",
+                    perfil,
+                    atividade,
+                    log.detalhes || ""
+                ].map(escaparCelulaCSV).join(";"));
+            });
+
+            const csvConteudo = "\uFEFF" + linhas.join("\r\n");
+            const blob = new Blob([csvConteudo], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+
+            const hoje = new Date().toISOString().slice(0, 10);
+            const prefixo = filtroAtual === "login"
+                ? "planilha-acessos"
+                : filtroAtual === "alteracoes"
+                    ? "planilha-alteracoes"
+                    : "planilha-historico";
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${prefixo}-${hoje}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            showToast("📊 Planilha baixada com sucesso!");
         }
 
         function limparHistorico() {
