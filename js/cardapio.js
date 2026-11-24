@@ -119,20 +119,40 @@ const DEFAULT_CARDAPIO = {
    GERENCIAMENTO DE DADOS E SINCRONIZAÇÃO (USUÁRIO ↔ ADMINISTRADOR)
    ===================================================================== */
 
-// Obter cardápio persistido ou o padrão original
+// Obter cardápio fixo padrão (PDF importado como fixo ou padrão oficial)
+function getCardapioFixoPadrao() {
+    try {
+        const fixo = localStorage.getItem("cardapioFixoData");
+        if (fixo) {
+            const parsed = JSON.parse(fixo);
+            if (parsed && Array.isArray(parsed.dias) && parsed.dias.length > 0) {
+                return parsed;
+            }
+        }
+    } catch (e) {
+        console.error("Erro ao ler cardapioFixoData:", e);
+    }
+    return JSON.parse(JSON.stringify(DEFAULT_CARDAPIO));
+}
+
+function saveCardapioFixoPadrao(novoFixo) {
+    localStorage.setItem("cardapioFixoData", JSON.stringify(novoFixo));
+}
+
+// Obter cardápio persistido ou o padrão fixo atual
 function getCardapioData() {
     try {
         const salvo = localStorage.getItem("cardapioData");
         if (salvo) {
             const parsed = JSON.parse(salvo);
-            if (parsed && parsed.versao === CARDAPIO_VERSION && Array.isArray(parsed.dias) && parsed.dias.length > 0) {
+            if (parsed && (parsed.versao === CARDAPIO_VERSION || parsed.importadoPdf === true) && Array.isArray(parsed.dias) && parsed.dias.length > 0) {
                 return parsed;
             }
         }
     } catch (e) {
         console.error("Erro ao ler cardapioData:", e);
     }
-    return JSON.parse(JSON.stringify(DEFAULT_CARDAPIO));
+    return getCardapioFixoPadrao();
 }
 
 var CARDAPIO = getCardapioData();
@@ -342,10 +362,12 @@ function restaurarTodosPadroes() {
     }
 }
 
-/* ---------- Restaurar TODO o Cardápio (pratos e ingredientes) ao padrão SEDUC-SP ---------- */
+/* ---------- Restaurar TODO o Cardápio (pratos e ingredientes) ao padrão fixo ---------- */
 function restaurarTodoCardapioOficial() {
-    if (!confirm("Deseja restaurar TODO o Cardápio (pratos, itens e quantidades) para a versão oficial do Estado (SEDUC-SP)?")) return;
-    CARDAPIO = JSON.parse(JSON.stringify(DEFAULT_CARDAPIO));
+    const fixo = getCardapioFixoPadrao();
+    const origemLabel = fixo.importadoPdf ? "cardápio fixo importado do PDF" : "versão oficial do Estado (SEDUC-SP)";
+    if (!confirm(`Deseja restaurar TODO o Cardápio (pratos, itens e quantidades) para o ${origemLabel}?`)) return;
+    CARDAPIO = fixo;
     localStorage.removeItem("cardapioData");
     diaQuantidades = {};
     diaQuantidadesMeta = {};
@@ -587,11 +609,12 @@ function removerIngredienteDoDia(diaNome, idx) {
 }
 
 function restaurarPratosDiaOriginal(diaNome) {
-    const diaOrig = DEFAULT_CARDAPIO.dias.find(d => d.nome.toLowerCase() === diaNome.toLowerCase());
+    const fixo = getCardapioFixoPadrao();
+    const diaOrig = fixo.dias.find(d => d.nome.toLowerCase() === diaNome.toLowerCase());
     const diaIndex = CARDAPIO.dias.findIndex(d => d.nome.toLowerCase() === diaNome.toLowerCase());
     if (!diaOrig || diaIndex === -1) return;
 
-    if (!confirm(`Restaurar os pratos e ingredientes de ${diaNome}-feira para o padrão oficial original?`)) return;
+    if (!confirm(`Restaurar os pratos e ingredientes de ${diaNome}-feira para o padrão fixo atual?`)) return;
 
     CARDAPIO.dias[diaIndex] = JSON.parse(JSON.stringify(diaOrig));
     
@@ -1656,8 +1679,11 @@ document.addEventListener("DOMContentLoaded", function () {
     atualizarBadgesMenu();
     if (typeof registrarAtualizacaoEstoque === "function") {
         registrarAtualizacaoEstoque(function () {
+            carregarQuantidadesStorage();
+            CARDAPIO = getCardapioData();
             atualizarNotificacoesSininho();
             atualizarTelasCardapioAbertas();
+            atualizarBadgesMenu();
         });
     }
 });
@@ -1668,6 +1694,7 @@ window.addEventListener("storage", function (e) {
         e.key === "cardapioDiaQuantidades" ||
         e.key === "cardapioQuantidadesMeta" ||
         e.key === "cardapioData" ||
+        e.key === "cardapioFixoData" ||
         e.key === "baixasCardapio" ||
         e.key === "cardapioUltimaAlteracao" ||
         e.key === "products" ||

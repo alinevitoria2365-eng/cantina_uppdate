@@ -1608,3 +1608,345 @@
     opacity: 0.9;
 }
 
+/* =====================================================================
+   MODAL IMPORTAR CARDÁPIO (PDF)
+   ===================================================================== */
+.pdf-import-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(10, 30, 65, 0.78);
+}
+
+.pdf-import-overlay.aberto {
+    display: flex;
+    animation: cardapioFade 0.25s ease;
+}
+
+.pdf-import-modal {
+    width: 100%;
+    max-width: 980px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.pdf-import-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1.5px solid #e4e8ef;
+    background: #f8fafd;
+}
+
+.pdf-import-title {
+    margin: 0;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #12305c;
+}
+
+.pdf-import-subtitle {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #4a5568;
+}
+
+.pdf-import-body {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.pdf-dropzone {
+    border: 2.5px dashed #1a4fbf;
+    border-radius: 14px;
+    background: #f4f7fc;
+    padding: 36px 20px;
+    text-align: center;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.pdf-dropzone.dragover {
+    background: #e6effc;
+    border-color: #12305c;
+}
+
+.pdf-dropzone-icon {
+    font-size: 40px;
+    margin-bottom: 8px;
+}
+
+.pdf-dropzone-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #12305c;
+    margin-bottom: 4px;
+}
+
+.pdf-dropzone-desc {
+    font-size: 13px;
+    color: #5a6a85;
+    margin-bottom: 16px;
+}
+
+.pdf-btn-primary,
+.pdf-btn-confirm,
+.pdf-btn-secondary {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s, box-shadow 0.2s;
+}
+
+.pdf-btn-primary {
+    background: #1a4fbf;
+    color: #ffffff;
+}
+
+.pdf-btn-primary:hover {
+    background: #12305c;
+}
+
+.pdf-btn-confirm {
+    background: #1e7e34;
+    color: #ffffff;
+}
+
+.pdf-btn-confirm:hover {
+    background: #166528;
+}
+
+.pdf-btn-secondary {
+    background: #edf2f7;
+    color: #12305c;
+    border: 1px solid #cbd5e0;
+}
+
+.pdf-btn-secondary:hover {
+    background: #e2e8f0;
+}
+
+.pdf-import-dica {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #78350f;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.pdf-import-alert {
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    line-height: 1.4;
+}
+
+.pdf-import-alert.erro {
+    background: #fff5f5;
+    border: 1px solid #feb2b2;
+    color: #9b2c2c;
+}
+
+.pdf-import-alert.sucesso {
+    background: #f0fff4;
+    border: 1px solid #9ae6b4;
+    color: #22543d;
+}
+
+.pdf-loading {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.pdf-spinner {
+    width: 38px;
+    height: 38px;
+    margin: 0 auto 12px;
+    border: 4px solid #e2e8f0;
+    border-top-color: #1a4fbf;
+    border-radius: 50%;
+    animation: pdfSpin 0.8s linear infinite;
+}
+
+@keyframes pdfSpin {
+    to { transform: rotate(360deg); }
+}
+
+.pdf-loading-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #12305c;
+}
+
+.pdf-loading-sub {
+    font-size: 13px;
+    color: #718096;
+    margin-top: 4px;
+}
+
+.pdf-meta-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.pdf-meta-titulo {
+    flex: 3 1 260px;
+}
+
+.pdf-meta-semana {
+    flex: 1 1 110px;
+}
+
+.pdf-field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 4px;
+}
+
+.pdf-input,
+.pdf-input-data,
+.pdf-textarea-itens {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1.5px solid #cbd5e0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: #1a202c;
+    font-family: inherit;
+}
+
+.pdf-input:focus,
+.pdf-input-data:focus,
+.pdf-textarea-itens:focus {
+    outline: none;
+    border-color: #1a4fbf;
+}
+
+.pdf-input-data {
+    width: 110px;
+    padding: 5px 8px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.pdf-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+.pdf-day-card {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    background: #f9fbfd;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pdf-day-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    color: #12305c;
+    font-size: 15px;
+}
+
+.pdf-textarea-itens {
+    resize: vertical;
+    background: #ffffff;
+    line-height: 1.4;
+}
+
+.pdf-ing-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 4px;
+}
+
+.pdf-ing-chip {
+    background: #e6effc;
+    color: #12305c;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.pdf-ing-vazio {
+    font-size: 11.5px;
+    color: #718096;
+    font-style: italic;
+}
+
+.pdf-raw-details {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 8px 12px;
+    background: #f8fafc;
+    font-size: 12.5px;
+}
+
+.pdf-raw-details summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: #12305c;
+}
+
+.pdf-raw-pre {
+    margin: 10px 0 0;
+    max-height: 180px;
+    overflow: auto;
+    white-space: pre-wrap;
+    font-size: 11.5px;
+    color: #2d3748;
+    background: #ffffff;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.pdf-import-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.pdf-import-actions-right {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+

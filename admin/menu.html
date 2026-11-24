@@ -116,6 +116,20 @@
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1a4fbf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L16 12 L9 18"></path></svg>
             </span>
         </button>
+
+        <button type="button" class="menu-btn cv-menu-btn" id="btnImportarCardapioPdf" onclick="abrirImportarCardapioPdf()">
+            <span class="menu-icon cv-menu-icon">
+                <svg viewBox="0 0 48 48" width="26" height="26" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 6 H28 L38 16 V40 C38 41.5 36.8 42.5 35.5 42.5 H14 C12.5 42.5 11.5 41.5 11.5 40 V8.5 C11.5 7 12.5 6 14 6 Z"></path>
+                    <path d="M28 6 V16 H38"></path>
+                    <path d="M24 35 V22 M24 22 L19 27 M24 22 L29 27"></path>
+                </svg>
+            </span>
+            <span class="menu-text">Importar Cardápio (PDF)</span>
+            <span class="menu-arrow cv-menu-arrow">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1a4fbf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L16 12 L9 18"></path></svg>
+            </span>
+        </button>
     </div>
 
     <div class="footer-bar cv-back-bar">
@@ -145,6 +159,7 @@
 
 <script src="../js/app.js"></script>
 <script src="../js/cardapio.js"></script>
+<script src="../js/cardapio-pdf.js"></script>
 <script>
     // Proteger rota - verificar login
     document.addEventListener("DOMContentLoaded", function() {

@@ -1236,6 +1236,7 @@ const CHAVES_PERSISTENTES = [
     "cardapioDiaQuantidades",
     "cardapioQuantidadesMeta",
     "cardapioData",
+    "cardapioFixoData",
     "cardapioUltimaAlteracao",
     "cozinheiras",
     "cozinheirasRemovidas",
